@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Extractor Info Promotor</title>
+    <title>Extractor Inteligente - Ventas SIAC</title>
     <style>
         * {
             margin: 0;
@@ -298,7 +298,7 @@
 <body>
 <div class="app-container">
     <div class="hero">
-        <h1>📋 Extractor Info Promotor</h1>
+        <h1>📋 Extractor Inteligente SIAC</h1>
         <p>Pega el texto del promotor y automáticamente extraerá toda la información en los campos correspondientes</p>
         <p style="font-size: 0.85rem; margin-top: 0.5rem;">✏️ Haz clic en cualquier campo para editarlo antes de copiar</p>
     </div>
@@ -362,7 +362,8 @@ DATOS DEL CLIENTE
         { id: "correo_cliente", label: "Correo Electrónico", key: "correo", editable: true },
         { id: "direccion_completa", label: "Dirección Completa", key: "direccionCompleta", editable: true },
         { id: "megas", label: "Megas", key: "megas", editable: true },
-        { id: "precio_paquete", label: "Costo del Paquete", key: "precioPaquete", editable: true }
+        { id: "precio_paquete", label: "Costo del Paquete", key: "precioPaquete", editable: true },
+        { id: "observaciones", label: "Observaciones", key: "observaciones", editable: true }
     ];
 
     let uiElements = {};
@@ -561,6 +562,9 @@ DATOS DEL CLIENTE
         const celulaMatch = text.match(/Célula:\s*(\d+)/i);
         data.estrategia = celulaMatch ? celulaMatch[1].trim() : "";
         
+        // Campo de observaciones siempre vacío inicialmente
+        data.observaciones = "";
+        
         return data;
     }
 
@@ -579,7 +583,8 @@ DATOS DEL CLIENTE
             'correo_cliente': data.correo || "",
             'direccion_completa': data.direccionCompleta || "",
             'megas': data.megas || "",
-            'precio_paquete': data.precioPaquete || ""
+            'precio_paquete': data.precioPaquete || "",
+            'observaciones': data.observaciones || ""
         };
         
         for (const [fieldId, value] of Object.entries(mapping)) {
@@ -620,7 +625,8 @@ DATOS DEL CLIENTE
             getValue('correo_cliente'),
             getValue('direccion_completa'),
             getValue('megas'),
-            getValue('precio_paquete')
+            getValue('precio_paquete'),
+            getValue('observaciones')
         ];
     }
     
@@ -682,7 +688,7 @@ DATOS DEL CLIENTE
             'fecha_actual', 'validador', 'estatus', 'folio_siac', 'tipo_venta',
             'estrategia', 'gerente', 'clave_promotor', 'nombre_cliente',
             'celular_cliente', 'celular_adicional', 'correo_cliente',
-            'direccion_completa', 'megas', 'precio_paquete'
+            'direccion_completa', 'megas', 'precio_paquete', 'observaciones'
         ];
         
         const values = [];
