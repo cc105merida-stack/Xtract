@@ -267,6 +267,101 @@
             background: #ef4444;
         }
 
+        /* Estilos para el modal de alerta */
+        .alert-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .alert-content {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: left;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #dc2626;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-content h3::before {
+            content: "⚠️";
+            font-size: 1.5rem;
+        }
+
+        .alert-content p {
+            color: #475569;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .alert-content .fields-list {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0.75rem;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .alert-content .fields-list ul {
+            margin: 0.5rem 0 0 1.5rem;
+            color: #92400e;
+        }
+
+        .alert-content .fields-list li {
+            margin: 0.25rem 0;
+            font-weight: 500;
+        }
+
+        .alert-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .alert-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
         @media (max-width: 780px) {
             body {
                 padding: 1rem;
@@ -343,27 +438,39 @@ DATOS DEL CLIENTE
     </div>
 </div>
 
+<!-- Modal de alerta personalizado -->
+<div id="alertModal" class="alert-modal">
+    <div class="alert-content">
+        <h3>Campos incompletos</h3>
+        <p>Se detectaron <strong id="emptyCount"></strong> campos obligatorios sin información:</p>
+        <div class="fields-list" id="emptyFieldsList"></div>
+        <p style="font-size: 0.85rem; color: #64748b;">⚠️ Por favor, completa estos campos antes de continuar o verifica que la información esté correctamente extraída.</p>
+        <button id="closeAlertBtn" class="alert-btn">Aceptar</button>
+    </div>
+</div>
+
 <div id="toastMessage" class="toast-msg">✅ Copiado al portapapeles</div>
 
 <script>
     // Definición de los campos en el orden correcto
+    // Excluimos VALIDADOR y ESTATUS de la verificación
     const fieldsDefinition = [
-        { id: "fecha_actual", label: "Fecha Actual", key: "fecha", editable: false },
-        { id: "validador", label: "Validador", key: "validador", editable: true },
-        { id: "estatus", label: "Estatus", key: "estatus", editable: true },
-        { id: "folio_siac", label: "Folio SIAC", key: "folio", editable: true },
-        { id: "tipo_venta", label: "Tipo de Venta", key: "tipoVenta", editable: true },
-        { id: "estrategia", label: "Estrategia", key: "estrategia", editable: true },
-        { id: "gerente", label: "Gerente", key: "gerente", editable: true },
-        { id: "clave_promotor", label: "Clave de Promotor", key: "clavePromotor", editable: true },
-        { id: "nombre_cliente", label: "Nombre del Cliente", key: "nombreCliente", editable: true },
-        { id: "celular_cliente", label: "Celular Cliente", key: "celularCliente", editable: true },
-        { id: "celular_adicional", label: "Celular Adicional", key: "celularAdicional", editable: true },
-        { id: "correo_cliente", label: "Correo Electrónico", key: "correo", editable: true },
-        { id: "direccion_completa", label: "Dirección Completa", key: "direccionCompleta", editable: true },
-        { id: "megas", label: "Megas", key: "megas", editable: true },
-        { id: "precio_paquete", label: "Costo del Paquete", key: "precioPaquete", editable: true },
-        { id: "observaciones", label: "Observaciones", key: "observaciones", editable: true }
+        { id: "fecha_actual", label: "Fecha Actual", key: "fecha", editable: false, required: false },
+        { id: "validador", label: "Validador", key: "validador", editable: true, required: false },
+        { id: "estatus", label: "Estatus", key: "estatus", editable: true, required: false },
+        { id: "folio_siac", label: "Folio SIAC", key: "folio", editable: true, required: true },
+        { id: "tipo_venta", label: "Tipo de Venta", key: "tipoVenta", editable: true, required: true },
+        { id: "estrategia", label: "Estrategia", key: "estrategia", editable: true, required: true },
+        { id: "gerente", label: "Gerente", key: "gerente", editable: true, required: true },
+        { id: "clave_promotor", label: "Clave de Promotor", key: "clavePromotor", editable: true, required: true },
+        { id: "nombre_cliente", label: "Nombre del Cliente", key: "nombreCliente", editable: true, required: true },
+        { id: "celular_cliente", label: "Celular Cliente", key: "celularCliente", editable: true, required: true },
+        { id: "celular_adicional", label: "Celular Adicional", key: "celularAdicional", editable: true, required: false },
+        { id: "correo_cliente", label: "Correo Electrónico", key: "correo", editable: true, required: false },
+        { id: "direccion_completa", label: "Dirección Completa", key: "direccionCompleta", editable: true, required: true },
+        { id: "megas", label: "Megas", key: "megas", editable: true, required: true },
+        { id: "precio_paquete", label: "Costo del Paquete", key: "precioPaquete", editable: true, required: true },
+        { id: "observaciones", label: "Observaciones", key: "observaciones", editable: true, required: false }
     ];
 
     let uiElements = {};
@@ -562,10 +669,68 @@ DATOS DEL CLIENTE
         const celulaMatch = text.match(/Célula:\s*(\d+)/i);
         data.estrategia = celulaMatch ? celulaMatch[1].trim() : "";
         
-        // Campo de observaciones siempre vacío inicialmente
         data.observaciones = "";
         
         return data;
+    }
+
+    // Función para verificar campos vacíos y mostrar alerta si hay 3 o más
+    function checkEmptyFields() {
+        const emptyFields = [];
+        
+        for (const field of fieldsDefinition) {
+            // Saltamos VALIDADOR y ESTATUS y también campos no requeridos
+            if (!field.required) continue;
+            
+            const element = uiElements[field.id];
+            if (element) {
+                const value = element.textContent;
+                if (value === '—' || value === '' || value.trim() === '') {
+                    emptyFields.push(field.label);
+                }
+            }
+        }
+        
+        if (emptyFields.length >= 3) {
+            showEmptyFieldsAlert(emptyFields);
+        }
+    }
+    
+    // Función para mostrar el modal de alerta
+    function showEmptyFieldsAlert(emptyFields) {
+        const modal = document.getElementById('alertModal');
+        const emptyCountSpan = document.getElementById('emptyCount');
+        const emptyFieldsListDiv = document.getElementById('emptyFieldsList');
+        
+        emptyCountSpan.textContent = emptyFields.length;
+        
+        // Crear lista de campos vacíos
+        const ul = document.createElement('ul');
+        emptyFields.forEach(field => {
+            const li = document.createElement('li');
+            li.textContent = field;
+            ul.appendChild(li);
+        });
+        
+        emptyFieldsListDiv.innerHTML = '';
+        emptyFieldsListDiv.appendChild(ul);
+        
+        modal.style.display = 'flex';
+        
+        // Cerrar modal con el botón
+        const closeBtn = document.getElementById('closeAlertBtn');
+        const closeModal = () => {
+            modal.style.display = 'none';
+            closeBtn.removeEventListener('click', closeModal);
+        };
+        closeBtn.addEventListener('click', closeModal);
+        
+        // También cerrar si se hace clic fuera del contenido
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
     }
 
     function populateFields(data) {
@@ -600,6 +765,9 @@ DATOS DEL CLIENTE
         }
         
         updateDate();
+        
+        // Verificar campos vacíos después de poblar los datos
+        checkEmptyFields();
     }
 
     function getDataArray() {
