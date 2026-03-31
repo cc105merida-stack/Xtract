@@ -674,8 +674,25 @@ DATOS DEL CLIENTE
         return data;
     }
 
-    // Función para verificar campos vacíos y mostrar alerta si hay 3 o más
-    function checkEmptyFields() {
+    // Función para verificar si hay algún dato en los campos (excluyendo fecha actual)
+    function hasAnyData() {
+        for (const field of fieldsDefinition) {
+            // Saltamos fecha actual porque siempre tiene valor
+            if (field.id === 'fecha_actual') continue;
+            
+            const element = uiElements[field.id];
+            if (element) {
+                const value = element.textContent;
+                if (value !== '—' && value !== '' && value.trim() !== '') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Función para verificar campos vacíos y mostrar alerta si hay 3 o más (SOLO durante extracción)
+    function checkEmptyFields(showAlert = true) {
         const emptyFields = [];
         
         for (const field of fieldsDefinition) {
@@ -691,7 +708,7 @@ DATOS DEL CLIENTE
             }
         }
         
-        if (emptyFields.length >= 3) {
+        if (showAlert && emptyFields.length >= 3) {
             showEmptyFieldsAlert(emptyFields);
         }
     }
@@ -766,8 +783,8 @@ DATOS DEL CLIENTE
         
         updateDate();
         
-        // Verificar campos vacíos después de poblar los datos
-        checkEmptyFields();
+        // Verificar campos vacíos SOLO durante extracción (no durante limpieza)
+        checkEmptyFields(true);
     }
 
     function getDataArray() {
@@ -890,8 +907,18 @@ DATOS DEL CLIENTE
         }
         
         document.getElementById('rawTextInput').value = '';
+        
+        // Limpiar todos los campos sin mostrar alerta
         const emptyData = {};
-        populateFields(emptyData);
+        
+        for (const [fieldId] of Object.entries(uiElements)) {
+            if (uiElements[fieldId]) {
+                uiElements[fieldId].textContent = "—";
+                uiElements[fieldId].classList.add('empty-field');
+            }
+        }
+        
+        updateDate();
         showToast("🧹 Todos los datos fueron limpiados", 'success');
     }
 
@@ -900,17 +927,36 @@ DATOS DEL CLIENTE
             saveCurrentEdit();
         }
         
-        const emptyData = {};
-        populateFields(emptyData);
+        // Limpiar todos los campos sin mostrar alerta
+        for (const [fieldId] of Object.entries(uiElements)) {
+            if (uiElements[fieldId]) {
+                uiElements[fieldId].textContent = "—";
+                uiElements[fieldId].classList.add('empty-field');
+            }
+        }
+        
+        updateDate();
         showToast("Campos de salida reiniciados", 'success');
     }
 
     async function copyExcelFormat() {
+        // Verificar si hay datos antes de copiar
+        if (!hasAnyData()) {
+            showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
+            return;
+        }
+        
         const excelData = getExcelData();
         await copyToClipboard(excelData, "📋 Datos copiados (formato Excel). ¡Listo para pegar!");
     }
 
     async function copyTextFormat() {
+        // Verificar si hay datos antes de copiar
+        if (!hasAnyData()) {
+            showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
+            return;
+        }
+        
         const textData = getReadableText();
         await copyToClipboard(textData, "📝 Datos copiados en formato texto");
     }
