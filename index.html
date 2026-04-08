@@ -267,7 +267,6 @@
             background: #ef4444;
         }
 
-        /* Estilos para el modal de alerta */
         .alert-modal {
             display: none;
             position: fixed;
@@ -417,7 +416,7 @@ DATOS DEL CLIENTE
                 <button id="clearAllBtn" class="btn btn-secondary">🗑️ Limpiar todo</button>
             </div>
             <div style="margin-top: 12px; padding: 10px; background: #fef3c7; border-radius: 0.75rem; font-size: 0.75rem; color: #92400e;">
-                💡 <strong>Consejo:</strong> El sistema extrae Tipo de Venta de la primera línea, dirección completa concatenada, y todos los datos del cliente. Los campos son editables.
+                💡 <strong>Consejo:</strong> El sistema extrae Tipo de Venta de la primera línea, dirección completa concatenada, gastos de instalación y beneficios incluidos.
             </div>
         </div>
 
@@ -452,8 +451,7 @@ DATOS DEL CLIENTE
 <div id="toastMessage" class="toast-msg">✅ Copiado al portapapeles</div>
 
 <script>
-    // Definición de los campos en el orden correcto
-    // Excluimos VALIDADOR y ESTATUS de la verificación
+    // Definición de los campos en el orden solicitado
     const fieldsDefinition = [
         { id: "fecha_actual", label: "Fecha Actual", key: "fecha", editable: false, required: false },
         { id: "validador", label: "Validador", key: "validador", editable: true, required: false },
@@ -468,8 +466,10 @@ DATOS DEL CLIENTE
         { id: "celular_adicional", label: "Celular Adicional", key: "celularAdicional", editable: true, required: false },
         { id: "correo_cliente", label: "Correo Electrónico", key: "correo", editable: true, required: false },
         { id: "direccion_completa", label: "Dirección Completa", key: "direccionCompleta", editable: true, required: true },
-        { id: "megas", label: "Megas", key: "megas", editable: true, required: true },
         { id: "precio_paquete", label: "Costo del Paquete", key: "precioPaquete", editable: true, required: true },
+        { id: "megas", label: "Megas", key: "megas", editable: true, required: true },
+        { id: "gastos_instalacion", label: "Gastos de Instalación", key: "gastosInstalacion", editable: true, required: true },
+        { id: "beneficios", label: "Beneficios que incluye", key: "beneficios", editable: true, required: true },
         { id: "observaciones", label: "Observaciones", key: "observaciones", editable: true, required: false }
     ];
 
@@ -606,6 +606,20 @@ DATOS DEL CLIENTE
         return parts.join(' ');
     }
 
+    // Extraer beneficios (lista de servicios después de "Incluye:")
+    function extractBenefits(text) {
+        const includeMatch = text.match(/Incluye:\s*\n?([\s\S]*?)(?=\n\s*\n|\n\s*[A-ZÁÉÍÓÚÑ]|$)/i);
+        if (includeMatch && includeMatch[1]) {
+            let benefitsText = includeMatch[1];
+            // Limpiar y convertir en una línea
+            const lines = benefitsText.split('\n')
+                .map(line => line.replace(/^[\s*\-•]+/, '').trim())
+                .filter(line => line.length > 0);
+            return lines.join(', ');
+        }
+        return "";
+    }
+
     function extractData(text) {
         const data = {};
         
@@ -666,9 +680,13 @@ DATOS DEL CLIENTE
         const megasMatch = text.match(/Megas:\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
         data.megas = megasMatch ? `${megasMatch[1]} Mbps` : "";
         
+        const gastosMatch = text.match(/Gastos de instalación:\s*\$([^\n]+)/i);
+        data.gastosInstalacion = gastosMatch ? `$${gastosMatch[1].trim()}` : "";
+        
         const celulaMatch = text.match(/Célula:\s*(\d+)/i);
         data.estrategia = celulaMatch ? celulaMatch[1].trim() : "";
         
+        data.beneficios = extractBenefits(text);
         data.observaciones = "";
         
         return data;
@@ -677,9 +695,7 @@ DATOS DEL CLIENTE
     // Función para verificar si hay algún dato en los campos (excluyendo fecha actual)
     function hasAnyData() {
         for (const field of fieldsDefinition) {
-            // Saltamos fecha actual porque siempre tiene valor
             if (field.id === 'fecha_actual') continue;
-            
             const element = uiElements[field.id];
             if (element) {
                 const value = element.textContent;
@@ -691,14 +707,11 @@ DATOS DEL CLIENTE
         return false;
     }
 
-    // Función para verificar campos vacíos y mostrar alerta si hay 3 o más (SOLO durante extracción)
     function checkEmptyFields(showAlert = true) {
         const emptyFields = [];
         
         for (const field of fieldsDefinition) {
-            // Saltamos VALIDADOR y ESTATUS y también campos no requeridos
             if (!field.required) continue;
-            
             const element = uiElements[field.id];
             if (element) {
                 const value = element.textContent;
@@ -713,15 +726,12 @@ DATOS DEL CLIENTE
         }
     }
     
-    // Función para mostrar el modal de alerta
     function showEmptyFieldsAlert(emptyFields) {
         const modal = document.getElementById('alertModal');
         const emptyCountSpan = document.getElementById('emptyCount');
         const emptyFieldsListDiv = document.getElementById('emptyFieldsList');
         
         emptyCountSpan.textContent = emptyFields.length;
-        
-        // Crear lista de campos vacíos
         const ul = document.createElement('ul');
         emptyFields.forEach(field => {
             const li = document.createElement('li');
@@ -731,10 +741,8 @@ DATOS DEL CLIENTE
         
         emptyFieldsListDiv.innerHTML = '';
         emptyFieldsListDiv.appendChild(ul);
-        
         modal.style.display = 'flex';
         
-        // Cerrar modal con el botón
         const closeBtn = document.getElementById('closeAlertBtn');
         const closeModal = () => {
             modal.style.display = 'none';
@@ -742,11 +750,8 @@ DATOS DEL CLIENTE
         };
         closeBtn.addEventListener('click', closeModal);
         
-        // También cerrar si se hace clic fuera del contenido
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
+            if (e.target === modal) closeModal();
         });
     }
 
@@ -764,8 +769,10 @@ DATOS DEL CLIENTE
             'celular_adicional': data.celularAdicional || "",
             'correo_cliente': data.correo || "",
             'direccion_completa': data.direccionCompleta || "",
-            'megas': data.megas || "",
             'precio_paquete': data.precioPaquete || "",
+            'megas': data.megas || "",
+            'gastos_instalacion': data.gastosInstalacion || "",
+            'beneficios': data.beneficios || "",
             'observaciones': data.observaciones || ""
         };
         
@@ -780,10 +787,7 @@ DATOS DEL CLIENTE
                 }
             }
         }
-        
         updateDate();
-        
-        // Verificar campos vacíos SOLO durante extracción (no durante limpieza)
         checkEmptyFields(true);
     }
 
@@ -809,16 +813,16 @@ DATOS DEL CLIENTE
             getValue('celular_adicional'),
             getValue('correo_cliente'),
             getValue('direccion_completa'),
-            getValue('megas'),
             getValue('precio_paquete'),
+            getValue('megas'),
+            getValue('gastos_instalacion'),
+            getValue('beneficios'),
             getValue('observaciones')
         ];
     }
     
     async function copyToClipboard(text, successMsg = "✅ Copiado al portapapeles") {
-        if (currentEditingField) {
-            saveCurrentEdit();
-        }
+        if (currentEditingField) saveCurrentEdit();
         
         if (navigator.clipboard && window.isSecureContext) {
             try {
@@ -841,7 +845,6 @@ DATOS DEL CLIENTE
             textarea.select();
             const successful = document.execCommand('copy');
             document.body.removeChild(textarea);
-            
             if (successful) {
                 showToast(successMsg, 'success');
                 return true;
@@ -856,107 +859,79 @@ DATOS DEL CLIENTE
     }
 
     function getExcelData() {
-        const dataArray = getDataArray();
-        return dataArray.join("\t");
+        return getDataArray().join("\t");
     }
 
     function getReadableText() {
-        const getValue = (fieldId) => {
-            const elem = uiElements[fieldId];
-            if (!elem) return null;
-            const value = elem.textContent;
-            if (value === "—" || value === "") return null;
-            return value;
-        };
-        
         const fieldIds = [
             'fecha_actual', 'validador', 'estatus', 'folio_siac', 'tipo_venta',
             'estrategia', 'gerente', 'clave_promotor', 'nombre_cliente',
             'celular_cliente', 'celular_adicional', 'correo_cliente',
-            'direccion_completa', 'megas', 'precio_paquete', 'observaciones'
+            'direccion_completa', 'precio_paquete', 'megas', 'gastos_instalacion',
+            'beneficios', 'observaciones'
         ];
-        
         const values = [];
         for (const fieldId of fieldIds) {
-            const value = getValue(fieldId);
-            if (value) values.push(value);
+            const elem = uiElements[fieldId];
+            if (elem) {
+                const value = elem.textContent;
+                if (value !== '—' && value !== '') values.push(value);
+            }
         }
-        
         return values.join('\n');
     }
 
     function performExtraction() {
-        if (currentEditingField) {
-            saveCurrentEdit();
-        }
-        
+        if (currentEditingField) saveCurrentEdit();
         const rawText = document.getElementById('rawTextInput').value;
         if (!rawText.trim()) {
             showToast("⚠️ Por favor, pega el texto del promotor primero.", 'error');
             return;
         }
-        
         const extractedData = extractData(rawText);
         populateFields(extractedData);
         showToast("✅ Extracción completada exitosamente", 'success');
     }
 
     function clearAll() {
-        if (currentEditingField) {
-            saveCurrentEdit();
-        }
-        
+        if (currentEditingField) saveCurrentEdit();
         document.getElementById('rawTextInput').value = '';
-        
-        // Limpiar todos los campos sin mostrar alerta
-        const emptyData = {};
-        
-        for (const [fieldId] of Object.entries(uiElements)) {
+        for (const fieldId in uiElements) {
             if (uiElements[fieldId]) {
                 uiElements[fieldId].textContent = "—";
                 uiElements[fieldId].classList.add('empty-field');
             }
         }
-        
         updateDate();
         showToast("🧹 Todos los datos fueron limpiados", 'success');
     }
 
     function clearFieldsOnly() {
-        if (currentEditingField) {
-            saveCurrentEdit();
-        }
-        
-        // Limpiar todos los campos sin mostrar alerta
-        for (const [fieldId] of Object.entries(uiElements)) {
+        if (currentEditingField) saveCurrentEdit();
+        for (const fieldId in uiElements) {
             if (uiElements[fieldId]) {
                 uiElements[fieldId].textContent = "—";
                 uiElements[fieldId].classList.add('empty-field');
             }
         }
-        
         updateDate();
         showToast("Campos de salida reiniciados", 'success');
     }
 
     async function copyExcelFormat() {
-        // Verificar si hay datos antes de copiar
         if (!hasAnyData()) {
             showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
             return;
         }
-        
         const excelData = getExcelData();
         await copyToClipboard(excelData, "📋 Datos copiados (formato Excel). ¡Listo para pegar!");
     }
 
     async function copyTextFormat() {
-        // Verificar si hay datos antes de copiar
         if (!hasAnyData()) {
             showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
             return;
         }
-        
         const textData = getReadableText();
         await copyToClipboard(textData, "📝 Datos copiados en formato texto");
     }
@@ -973,13 +948,11 @@ DATOS DEL CLIENTE
 
     document.addEventListener('DOMContentLoaded', () => {
         buildUI();
-        
         document.getElementById('extractBtn').addEventListener('click', performExtraction);
         document.getElementById('clearAllBtn').addEventListener('click', clearAll);
         document.getElementById('copyToClipboardBtn').addEventListener('click', copyExcelFormat);
         document.getElementById('copyTextBtn').addEventListener('click', copyTextFormat);
         document.getElementById('clearFieldsBtn').addEventListener('click', clearFieldsOnly);
-        
         document.getElementById('rawTextInput').value = '';
     });
 </script>
