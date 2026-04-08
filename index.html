@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Extractor Inteligente - Ventas SIAC</title>
     <style>
+        /* (estilos igual que antes) */
         * {
             margin: 0;
             padding: 0;
@@ -606,12 +607,10 @@ DATOS DEL CLIENTE
         return parts.join(' ');
     }
 
-    // Extraer beneficios (lista de servicios después de "Incluye:")
     function extractBenefits(text) {
         const includeMatch = text.match(/Incluye:\s*\n?([\s\S]*?)(?=\n\s*\n|\n\s*[A-ZÁÉÍÓÚÑ]|$)/i);
         if (includeMatch && includeMatch[1]) {
             let benefitsText = includeMatch[1];
-            // Limpiar y convertir en una línea
             const lines = benefitsText.split('\n')
                 .map(line => line.replace(/^[\s*\-•]+/, '').trim())
                 .filter(line => line.length > 0);
@@ -692,7 +691,6 @@ DATOS DEL CLIENTE
         return data;
     }
 
-    // Función para verificar si hay algún dato en los campos (excluyendo fecha actual)
     function hasAnyData() {
         for (const field of fieldsDefinition) {
             if (field.id === 'fecha_actual') continue;
@@ -820,6 +818,22 @@ DATOS DEL CLIENTE
             getValue('observaciones')
         ];
     }
+
+    // Nueva función que genera el TSV con los campos extra: dos vacíos, DISPONIBLE, otro vacío y la fórmula
+    function getExcelDataWithExtras() {
+        const baseData = getDataArray();
+        // Agregar los campos extra
+        // Dos campos vacíos: representados como strings vacíos
+        const extraFields = [
+            "",          // primer vacío
+            "",          // segundo vacío
+            "DISPONIBLE", // tercer campo
+            "",          // cuarto vacío
+            '=IF(INDIRECT("A"&ROW())="",,COUNTIF(M:M,INDIRECT("M"&ROW())))'  // fórmula
+        ];
+        const allData = [...baseData, ...extraFields];
+        return allData.join("\t");
+    }
     
     async function copyToClipboard(text, successMsg = "✅ Copiado al portapapeles") {
         if (currentEditingField) saveCurrentEdit();
@@ -858,10 +872,17 @@ DATOS DEL CLIENTE
         }
     }
 
-    function getExcelData() {
-        return getDataArray().join("\t");
+    // Función para copiar el formato Excel con los extras
+    async function copyExcelFormat() {
+        if (!hasAnyData()) {
+            showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
+            return;
+        }
+        const excelData = getExcelDataWithExtras();
+        await copyToClipboard(excelData, "📋 Datos copiados (formato Excel con campos adicionales). ¡Listo para pegar!");
     }
 
+    // Texto legible (sin los extras)
     function getReadableText() {
         const fieldIds = [
             'fecha_actual', 'validador', 'estatus', 'folio_siac', 'tipo_venta',
@@ -879,6 +900,15 @@ DATOS DEL CLIENTE
             }
         }
         return values.join('\n');
+    }
+
+    async function copyTextFormat() {
+        if (!hasAnyData()) {
+            showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
+            return;
+        }
+        const textData = getReadableText();
+        await copyToClipboard(textData, "📝 Datos copiados en formato texto");
     }
 
     function performExtraction() {
@@ -916,24 +946,6 @@ DATOS DEL CLIENTE
         }
         updateDate();
         showToast("Campos de salida reiniciados", 'success');
-    }
-
-    async function copyExcelFormat() {
-        if (!hasAnyData()) {
-            showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
-            return;
-        }
-        const excelData = getExcelData();
-        await copyToClipboard(excelData, "📋 Datos copiados (formato Excel). ¡Listo para pegar!");
-    }
-
-    async function copyTextFormat() {
-        if (!hasAnyData()) {
-            showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
-            return;
-        }
-        const textData = getReadableText();
-        await copyToClipboard(textData, "📝 Datos copiados en formato texto");
     }
 
     function showToast(msg, type = 'success') {
