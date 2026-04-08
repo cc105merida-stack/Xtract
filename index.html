@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Extractor Inteligente - Ventas SIAC</title>
     <style>
-        /* (estilos igual que antes) */
+        /* (estilos igual que antes, se mantienen) */
         * {
             margin: 0;
             padding: 0;
@@ -819,20 +819,9 @@ DATOS DEL CLIENTE
         ];
     }
 
-    // Nueva función que genera el TSV con los campos extra: dos vacíos, DISPONIBLE, otro vacío y la fórmula
-    function getExcelDataWithExtras() {
-        const baseData = getDataArray();
-        // Agregar los campos extra
-        // Dos campos vacíos: representados como strings vacíos
-        const extraFields = [
-            "",          // primer vacío
-            "",          // segundo vacío
-            "DISPONIBLE", // tercer campo
-            "",          // cuarto vacío
-            '=IF(INDIRECT("A"&ROW())="",,COUNTIF(M:M,INDIRECT("M"&ROW())))'  // fórmula
-        ];
-        const allData = [...baseData, ...extraFields];
-        return allData.join("\t");
+    // Función para copiar SOLO los datos base (sin campos adicionales)
+    function getExcelData() {
+        return getDataArray().join("\t");
     }
     
     async function copyToClipboard(text, successMsg = "✅ Copiado al portapapeles") {
@@ -872,14 +861,14 @@ DATOS DEL CLIENTE
         }
     }
 
-    // Función para copiar el formato Excel con los extras
+    // Copiar formato Excel (solo datos)
     async function copyExcelFormat() {
         if (!hasAnyData()) {
             showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
             return;
         }
-        const excelData = getExcelDataWithExtras();
-        await copyToClipboard(excelData, "📋 Datos copiados (formato Excel con campos adicionales). ¡Listo para pegar!");
+        const excelData = getExcelData();
+        await copyToClipboard(excelData, "📋 Datos copiados (formato Excel). ¡Listo para pegar!");
     }
 
     // Texto legible (sin los extras)
