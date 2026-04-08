@@ -819,9 +819,13 @@ DATOS DEL CLIENTE
         ];
     }
 
-    // Función para copiar SOLO los datos base (sin campos adicionales)
+    // Función que genera el TSV con dos campos vacíos y "DISPONIBLE" al final
     function getExcelData() {
-        return getDataArray().join("\t");
+        const baseData = getDataArray();
+        // Agregar dos campos vacíos (tabuladores) y luego "DISPONIBLE"
+        const extraData = ["", "", "DISPONIBLE"];
+        const allData = [...baseData, ...extraData];
+        return allData.join("\t");
     }
     
     async function copyToClipboard(text, successMsg = "✅ Copiado al portapapeles") {
@@ -861,7 +865,7 @@ DATOS DEL CLIENTE
         }
     }
 
-    // Copiar formato Excel (solo datos)
+    // Copiar formato Excel (datos + dos vacíos + DISPONIBLE)
     async function copyExcelFormat() {
         if (!hasAnyData()) {
             showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error');
