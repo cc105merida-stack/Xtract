@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Extractor Inteligente - Ventas SIAC (Limpia * y $)</title>
+    <title>Extractor Inteligente - SIAC (Limpia * $ y normaliza teléfonos)</title>
     <style>
         /* (Estilos idénticos a la versión anterior, se omiten por brevedad pero se incluyen en la respuesta final) */
         * {
@@ -396,7 +396,7 @@
         <h1>📋 Extractor Inteligente SIAC</h1>
         <p>Pega el texto del promotor (cualquier formato) y automáticamente extraerá la información</p>
         <p style="font-size: 0.85rem; margin-top: 0.5rem;">✏️ Haz clic en cualquier campo para editarlo antes de copiar</p>
-        <p style="font-size: 0.8rem; margin-top: 0.3rem;">🔍 Se eliminan automáticamente los caracteres * y $ del texto extraído</p>
+        <p style="font-size: 0.8rem; margin-top: 0.3rem;">🔍 Se eliminan * y $; los teléfonos se normalizan a 10 dígitos</p>
     </div>
 
     <div class="dashboard">
@@ -566,6 +566,19 @@
         return value.replace(/[*$]/g, '').trim();
     }
 
+    // ==================== NORMALIZACIÓN DE TELÉFONOS ====================
+    function normalizePhone(phone) {
+        if (!phone) return '';
+        // Eliminar todo excepto dígitos
+        const digits = phone.replace(/\D/g, '');
+        // Si tiene exactamente 10 dígitos, devolverlos como string; de lo contrario devolver el original limpio (sin caracteres no numéricos)
+        if (digits.length === 10) {
+            return digits;
+        }
+        // Si no tiene 10 dígitos, devolvemos el valor original pero sin caracteres no numéricos (por si es un número incompleto)
+        return digits;
+    }
+
     // Función auxiliar para capturar valor después de una etiqueta (puede estar en la misma línea o en la siguiente) y limpiarlo
     function extractValue(text, labelPattern, flags = 'i') {
         const regex = new RegExp(`${labelPattern}\\s*:?\\s*\\n?\\s*(.*?)(?=\\n\\s*\\n|\\n\\s*[A-ZÁÉÍÓÚÑa-z]|$)`, flags);
@@ -636,12 +649,13 @@
         // 5. Celular Cliente (original: "* Celular del cliente:", nuevo: "Cel cliente:")
         let cel = extractValue(text, 'Celular del cliente');
         if (!cel) cel = extractValue(text, 'Cel cliente');
-        data.celularCliente = cel;
+        // Normalizar teléfono
+        data.celularCliente = normalizePhone(cel);
 
         // 6. Celular Adicional (original: "* Celular adicional 1:", nuevo: "Cel referencia:")
         let celAdd = extractValue(text, 'Celular adicional');
         if (!celAdd) celAdd = extractValue(text, 'Cel referencia');
-        data.celularAdicional = celAdd;
+        data.celularAdicional = normalizePhone(celAdd);
 
         // 7. Correo Electrónico
         let correo = extractValue(text, 'Correo');
