@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Extractor Inteligente - Ventas SIAC (Dual Format)</title>
+    <title>Extractor Inteligente - Ventas SIAC (Limpia * y $)</title>
     <style>
-        /* (Estilos igual que antes, se omiten por brevedad, pero se incluyen en la respuesta final) */
+        /* (Estilos idénticos a la versión anterior, se omiten por brevedad pero se incluyen en la respuesta final) */
         * {
             margin: 0;
             padding: 0;
@@ -394,8 +394,9 @@
 <div class="app-container">
     <div class="hero">
         <h1>📋 Extractor Inteligente SIAC</h1>
-        <p>Pega el texto del promotor (cualquier formato) y automáticamente extraerá toda la información</p>
+        <p>Pega el texto del promotor (cualquier formato) y automáticamente extraerá la información</p>
         <p style="font-size: 0.85rem; margin-top: 0.5rem;">✏️ Haz clic en cualquier campo para editarlo antes de copiar</p>
+        <p style="font-size: 0.8rem; margin-top: 0.3rem;">🔍 Se eliminan automáticamente los caracteres * y $ del texto extraído</p>
     </div>
 
     <div class="dashboard">
@@ -442,7 +443,7 @@
 <div id="toastMessage" class="toast-msg">✅ Copiado al portapapeles</div>
 
 <script>
-    // Definición de los campos en el orden solicitado (sin cambios)
+    // Definición de los campos en el orden solicitado
     const fieldsDefinition = [
         { id: "fecha_actual", label: "Fecha Actual", key: "fecha", editable: false, required: false },
         { id: "validador", label: "Validador", key: "validador", editable: true, required: false },
@@ -558,16 +559,36 @@
         if (fechaElem) fechaElem.innerText = `📅 ${formattedDate}`;
     }
 
-    // ==================== NUEVA EXTRACCIÓN FLEXIBLE ====================
-    // Función auxiliar para capturar valor después de una etiqueta (puede estar en la misma línea o en la siguiente)
+    // ==================== LIMPIEZA DE CARACTERES ====================
+    function cleanValue(value) {
+        if (!value) return '';
+        // Eliminar todos los caracteres * y $ del texto extraído
+        return value.replace(/[*$]/g, '').trim();
+    }
+
+    // Función auxiliar para capturar valor después de una etiqueta (puede estar en la misma línea o en la siguiente) y limpiarlo
     function extractValue(text, labelPattern, flags = 'i') {
         const regex = new RegExp(`${labelPattern}\\s*:?\\s*\\n?\\s*(.*?)(?=\\n\\s*\\n|\\n\\s*[A-ZÁÉÍÓÚÑa-z]|$)`, flags);
         const match = text.match(regex);
         if (match && match[1]) {
             let value = match[1].trim();
-            // Si el valor está vacío o es solo un separador, ignorar
             if (value === '' || value === '-' || value === 'n/a') return '';
-            return value;
+            return cleanValue(value);
+        }
+        return '';
+    }
+
+    // Extraer beneficios (lista después de "Incluye:") y limpiar * y $
+    function extractBenefits(text) {
+        const includeMatch = text.match(/Incluye:\s*\n?([\s\S]*?)(?=\n\s*\n|\n\s*[A-ZÁÉÍÓÚÑ]|$)/i);
+        if (includeMatch && includeMatch[1]) {
+            let benefitsText = includeMatch[1];
+            const lines = benefitsText.split('\n')
+                .map(line => line.replace(/^[\s*\-•]+/, '').trim())
+                .filter(line => line.length > 0 && !line.match(/^Promocion:/i));
+            // Limpiar cada línea de * y $ antes de unir
+            const cleanedLines = lines.map(line => cleanValue(line));
+            return cleanedLines.join(', ');
         }
         return '';
     }
@@ -579,17 +600,17 @@
         const firstLine = text.split('\n')[0].trim();
         if (firstLine.includes(':')) {
             const tipoMatch = firstLine.match(/^([^:]+)/);
-            data.tipoVenta = tipoMatch ? tipoMatch[1].trim() : '';
+            data.tipoVenta = tipoMatch ? cleanValue(tipoMatch[1].trim()) : '';
             const folioMatch = firstLine.match(/:\s*(\d+)/);
-            data.folio = folioMatch ? folioMatch[1].trim() : '';
+            data.folio = folioMatch ? cleanValue(folioMatch[1].trim()) : '';
         } else {
-            data.tipoVenta = firstLine;
+            data.tipoVenta = cleanValue(firstLine);
             data.folio = '';
         }
         // Si no se encontró folio, intentar con "SERVICIO NUEVO:" en cualquier parte
         if (!data.folio) {
             const folioAny = text.match(/SERVICIO NUEVO:\s*(\d+)/i);
-            data.folio = folioAny ? folioAny[1].trim() : '';
+            data.folio = folioAny ? cleanValue(folioAny[1].trim()) : '';
         }
         // También probar con "TIPO DE SERVICIO" (nuevo formato)
         if (!data.tipoVenta || data.tipoVenta === '') {
@@ -599,7 +620,7 @@
 
         // 2. Gerente (formato original: "Gerente de zona:")
         let gerente = extractValue(text, 'Gerente de zona');
-        if (!gerente) gerente = extractValue(text, 'Gerente'); // fallback
+        if (!gerente) gerente = extractValue(text, 'Gerente');
         data.gerente = gerente.replace(/\.$/, '');
 
         // 3. Clave de Promotor (original: "Clave promotor:", nuevo: "Promotor:")
@@ -609,7 +630,7 @@
 
         // 4. Nombre del Cliente
         let nombre = extractValue(text, 'Nombre del cliente');
-        if (!nombre) nombre = extractValue(text, 'Nombre del  cliente'); // con dos espacios
+        if (!nombre) nombre = extractValue(text, 'Nombre del  cliente');
         data.nombreCliente = nombre;
 
         // 5. Celular Cliente (original: "* Celular del cliente:", nuevo: "Cel cliente:")
@@ -655,14 +676,14 @@
         let megas = '';
         const paqueteMatch = text.match(/Paquete:\s*\$?([\d,]+)\s*-\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
         if (paqueteMatch) {
-            precio = `$${paqueteMatch[1].trim()}`;
-            megas = `${paqueteMatch[2].trim()} Mbps`;
+            precio = `$${cleanValue(paqueteMatch[1].trim())}`;
+            megas = `${cleanValue(paqueteMatch[2].trim())} Mbps`;
         } else {
             // Formato original: "$ Precio del Paquete: $349" y "Megas: 120mg"
             const precioOrig = text.match(/\$\s*Precio del Paquete:\s*\$([^\n]+)/i);
-            precio = precioOrig ? `$${precioOrig[1].trim()}` : '';
+            precio = precioOrig ? `$${cleanValue(precioOrig[1].trim())}` : '';
             const megasOrig = text.match(/Megas:\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
-            megas = megasOrig ? `${megasOrig[1].trim()} Mbps` : '';
+            megas = megasOrig ? `${cleanValue(megasOrig[1].trim())} Mbps` : '';
         }
         data.precioPaquete = precio;
         data.megas = megas;
@@ -684,19 +705,6 @@
         data.observaciones = '';
 
         return data;
-    }
-
-    // Extraer beneficios (lista después de "Incluye:")
-    function extractBenefits(text) {
-        const includeMatch = text.match(/Incluye:\s*\n?([\s\S]*?)(?=\n\s*\n|\n\s*[A-ZÁÉÍÓÚÑ]|$)/i);
-        if (includeMatch && includeMatch[1]) {
-            let benefitsText = includeMatch[1];
-            const lines = benefitsText.split('\n')
-                .map(line => line.replace(/^[\s*\-•]+/, '').trim())
-                .filter(line => line.length > 0 && !line.match(/^Promocion:/i));
-            return lines.join(', ');
-        }
-        return '';
     }
 
     // ==================== FIN NUEVA EXTRACCIÓN ====================
