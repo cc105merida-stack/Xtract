@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Extractor Inteligente - SIAC (Limpia * $ y normaliza teléfonos)</title>
+    <title>Extractor Inteligente - SIAC (Limpieza previa de texto)</title>
     <style>
-        /* (Estilos idénticos a la versión anterior, se omiten por brevedad pero se incluyen en la respuesta final) */
+        /* (Estilos idénticos a la versión anterior, se mantienen) */
         * {
             margin: 0;
             padding: 0;
@@ -396,7 +396,7 @@
         <h1>📋 Extractor Inteligente SIAC</h1>
         <p>Pega el texto del promotor (cualquier formato) y automáticamente extraerá la información</p>
         <p style="font-size: 0.85rem; margin-top: 0.5rem;">✏️ Haz clic en cualquier campo para editarlo antes de copiar</p>
-        <p style="font-size: 0.8rem; margin-top: 0.3rem;">🔍 Se eliminan * y $; los teléfonos se normalizan a 10 dígitos</p>
+        <p style="font-size: 0.8rem; margin-top: 0.3rem;">🔍 Se limpia el texto (líneas con *, espacios múltiples) y se normalizan teléfonos a 10 dígitos</p>
     </div>
 
     <div class="dashboard">
@@ -559,6 +559,40 @@
         if (fechaElem) fechaElem.innerText = `📅 ${formattedDate}`;
     }
 
+    // ==================== LIMPIEZA PREVIA DEL TEXTO ====================
+    function preprocessText(rawText) {
+        // Dividir en líneas
+        let lines = rawText.split(/\r?\n/);
+        
+        // 1. Eliminar líneas que comienzan con uno o más asteriscos y/o espacios
+        //    También eliminar líneas que consisten solo de asteriscos y espacios
+        lines = lines.filter(line => {
+            const trimmedStart = line.trimStart();
+            // Si la línea empieza con * (y posiblemente espacios antes), la eliminamos
+            if (/^\s*\*+/.test(line)) return false;
+            // Si la línea está vacía después de trim, la conservamos (los saltos de línea pueden ser necesarios)
+            return true;
+        });
+        
+        // 2. Reemplazar dos o más espacios en blanco consecutivos por uno solo, en cada línea
+        lines = lines.map(line => {
+            // Colapsar espacios múltiples
+            let cleaned = line.replace(/[ ]{2,}/g, ' ');
+            // Eliminar espacios al inicio y final de la línea (opcional, pero ayuda)
+            cleaned = cleaned.trim();
+            return cleaned;
+        });
+        
+        // Unir las líneas nuevamente con saltos de línea
+        let processedText = lines.join('\n');
+        
+        // Opcional: eliminar saltos de línea excesivos (más de dos seguidos)
+        processedText = processedText.replace(/\n{3,}/g, '\n\n');
+        
+        return processedText;
+    }
+    // ==================== FIN LIMPIEZA PREVIA ====================
+
     // ==================== LIMPIEZA DE CARACTERES ====================
     function cleanValue(value) {
         if (!value) return '';
@@ -607,10 +641,13 @@
     }
 
     function extractData(text) {
+        // Aplicar limpieza previa al texto
+        const cleanedText = preprocessText(text);
+        
         const data = {};
 
         // 1. Tipo de Venta y Folio SIAC (primer formato: "SERVICIO NUEVO: 12345")
-        const firstLine = text.split('\n')[0].trim();
+        const firstLine = cleanedText.split('\n')[0].trim();
         if (firstLine.includes(':')) {
             const tipoMatch = firstLine.match(/^([^:]+)/);
             data.tipoVenta = tipoMatch ? cleanValue(tipoMatch[1].trim()) : '';
@@ -622,57 +659,57 @@
         }
         // Si no se encontró folio, intentar con "SERVICIO NUEVO:" en cualquier parte
         if (!data.folio) {
-            const folioAny = text.match(/SERVICIO NUEVO:\s*(\d+)/i);
+            const folioAny = cleanedText.match(/SERVICIO NUEVO:\s*(\d+)/i);
             data.folio = folioAny ? cleanValue(folioAny[1].trim()) : '';
         }
         // También probar con "TIPO DE SERVICIO" (nuevo formato)
         if (!data.tipoVenta || data.tipoVenta === '') {
-            const tipoServicio = extractValue(text, 'TIPO DE SERVICIO');
+            const tipoServicio = extractValue(cleanedText, 'TIPO DE SERVICIO');
             if (tipoServicio) data.tipoVenta = tipoServicio;
         }
 
         // 2. Gerente (formato original: "Gerente de zona:")
-        let gerente = extractValue(text, 'Gerente de zona');
-        if (!gerente) gerente = extractValue(text, 'Gerente');
+        let gerente = extractValue(cleanedText, 'Gerente de zona');
+        if (!gerente) gerente = extractValue(cleanedText, 'Gerente');
         data.gerente = gerente.replace(/\.$/, '');
 
         // 3. Clave de Promotor (original: "Clave promotor:", nuevo: "Promotor:")
-        let clave = extractValue(text, 'Clave promotor');
-        if (!clave) clave = extractValue(text, 'Promotor');
+        let clave = extractValue(cleanedText, 'Clave promotor');
+        if (!clave) clave = extractValue(cleanedText, 'Promotor');
         data.clavePromotor = clave;
 
         // 4. Nombre del Cliente
-        let nombre = extractValue(text, 'Nombre del cliente');
-        if (!nombre) nombre = extractValue(text, 'Nombre del  cliente');
+        let nombre = extractValue(cleanedText, 'Nombre del cliente');
+        if (!nombre) nombre = extractValue(cleanedText, 'Nombre del  cliente');
         data.nombreCliente = nombre;
 
         // 5. Celular Cliente (original: "* Celular del cliente:", nuevo: "Cel cliente:")
-        let cel = extractValue(text, 'Celular del cliente');
-        if (!cel) cel = extractValue(text, 'Cel cliente');
+        let cel = extractValue(cleanedText, 'Celular del cliente');
+        if (!cel) cel = extractValue(cleanedText, 'Cel cliente');
         // Normalizar teléfono
         data.celularCliente = normalizePhone(cel);
 
         // 6. Celular Adicional (original: "* Celular adicional 1:", nuevo: "Cel referencia:")
-        let celAdd = extractValue(text, 'Celular adicional');
-        if (!celAdd) celAdd = extractValue(text, 'Cel referencia');
+        let celAdd = extractValue(cleanedText, 'Celular adicional');
+        if (!celAdd) celAdd = extractValue(cleanedText, 'Cel referencia');
         data.celularAdicional = normalizePhone(celAdd);
 
         // 7. Correo Electrónico
-        let correo = extractValue(text, 'Correo');
+        let correo = extractValue(cleanedText, 'Correo');
         data.correo = correo;
 
         // 8. Dirección (partes) - nuevo formato tiene Domicilio, Entrecalles, colonia y código postal, Municipio
-        let dir1 = extractValue(text, 'Domicilio');
-        let dir2 = extractValue(text, 'Entrecalles');
-        let dir3 = extractValue(text, 'colonia y código postal');
-        let dir4 = extractValue(text, 'Municipio');
+        let dir1 = extractValue(cleanedText, 'Domicilio');
+        let dir2 = extractValue(cleanedText, 'Entrecalles');
+        let dir3 = extractValue(cleanedText, 'colonia y código postal');
+        let dir4 = extractValue(cleanedText, 'Municipio');
         // Si no se encuentra en nuevo formato, usar el original (Calle y número, Entre calle 1, Entre calle 2, Colonia, Municipio, Código postal)
-        if (!dir1) dir1 = extractValue(text, 'Calle y número');
-        if (!dir2) dir2 = extractValue(text, 'Entre calle 1');
-        if (!dir3) dir3 = extractValue(text, 'Entre calle 2');
-        if (!dir4) dir4 = extractValue(text, 'Municipio');
-        let colonia = extractValue(text, 'Colonia');
-        let cp = extractValue(text, 'Código postal');
+        if (!dir1) dir1 = extractValue(cleanedText, 'Calle y número');
+        if (!dir2) dir2 = extractValue(cleanedText, 'Entre calle 1');
+        if (!dir3) dir3 = extractValue(cleanedText, 'Entre calle 2');
+        if (!dir4) dir4 = extractValue(cleanedText, 'Municipio');
+        let colonia = extractValue(cleanedText, 'Colonia');
+        let cp = extractValue(cleanedText, 'Código postal');
         
         // Construir dirección completa (similar a como se hacía antes)
         const addressParts = [];
@@ -688,31 +725,31 @@
         // 9. Precio del Paquete y Megas (nuevo formato: "Paquete: $349 - 120mg")
         let precio = '';
         let megas = '';
-        const paqueteMatch = text.match(/Paquete:\s*\$?([\d,]+)\s*-\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
+        const paqueteMatch = cleanedText.match(/Paquete:\s*\$?([\d,]+)\s*-\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
         if (paqueteMatch) {
             precio = `$${cleanValue(paqueteMatch[1].trim())}`;
             megas = `${cleanValue(paqueteMatch[2].trim())} Mbps`;
         } else {
             // Formato original: "$ Precio del Paquete: $349" y "Megas: 120mg"
-            const precioOrig = text.match(/\$\s*Precio del Paquete:\s*\$([^\n]+)/i);
+            const precioOrig = cleanedText.match(/\$\s*Precio del Paquete:\s*\$([^\n]+)/i);
             precio = precioOrig ? `$${cleanValue(precioOrig[1].trim())}` : '';
-            const megasOrig = text.match(/Megas:\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
+            const megasOrig = cleanedText.match(/Megas:\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
             megas = megasOrig ? `${cleanValue(megasOrig[1].trim())} Mbps` : '';
         }
         data.precioPaquete = precio;
         data.megas = megas;
 
         // 10. Gastos de Instalación (solo en formato original)
-        let gastos = extractValue(text, 'Gastos de instalación');
+        let gastos = extractValue(cleanedText, 'Gastos de instalación');
         if (gastos) data.gastosInstalacion = `$${gastos}`;
         else data.gastosInstalacion = '';
 
         // 11. Beneficios que incluye (nuevo formato: "Incluye:" lista, o el mismo del original)
-        let beneficios = extractBenefits(text);
+        let beneficios = extractBenefits(cleanedText);
         data.beneficios = beneficios;
 
         // 12. Estrategia (original: "Célula:", nuevo formato no tiene, pero se puede dejar vacío)
-        let estrategia = extractValue(text, 'Célula');
+        let estrategia = extractValue(cleanedText, 'Célula');
         data.estrategia = estrategia;
 
         // 13. Observaciones siempre vacío
