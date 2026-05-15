@@ -2,939 +2,533 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Extractor Inteligente - SIAC (Limpieza previa de texto)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Llamadas - Gestión de Estrategias</title>
+    <link rel="icon" type="image/jpeg" href="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* (Estilos idénticos a la versión anterior, se mantienen) */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            padding: 2rem 1.5rem;
-            min-height: 100vh;
-        }
-
-        .app-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .hero {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .hero h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            letter-spacing: -0.5px;
-        }
-
-        .hero p {
-            color: rgba(255,255,255,0.9);
-            margin-top: 0.5rem;
-            font-size: 1rem;
-        }
-
-        .dashboard {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.8rem;
-        }
-
-        .input-panel {
-            flex: 1.2;
-            min-width: 280px;
-            background: white;
-            border-radius: 1.5rem;
-            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
-            padding: 1.5rem;
-        }
-
-        .input-panel textarea {
-            width: 100%;
-            height: 450px;
-            padding: 1rem;
-            font-size: 0.85rem;
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            border: 2px solid #e2e8f0;
-            border-radius: 1rem;
-            resize: vertical;
-            outline: none;
-            transition: 0.2s;
-            line-height: 1.5;
-        }
-
-        .input-panel textarea:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.3rem;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            flex: 1;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-
-        .btn-secondary {
-            background: #f1f5f9;
-            color: #334155;
-            border: 1px solid #cbd5e1;
-        }
-
-        .btn-secondary:hover {
-            background: #e2e8f0;
-        }
-
-        .output-panel {
-            flex: 1.8;
-            min-width: 360px;
-            background: white;
-            border-radius: 1.5rem;
-            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.3);
-            padding: 1.5rem;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .card-header h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-        }
-
-        .date-badge {
-            background: #f1f5f9;
-            padding: 0.4rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #475569;
-        }
-
-        .fields-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1rem;
-            max-height: 550px;
-            overflow-y: auto;
-            padding-right: 0.5rem;
-        }
-
-        .field-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-        }
-
-        .field-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #64748b;
-        }
-
-        .field-value {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 0.6rem 1rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #0f172a;
-            word-break: break-word;
-            min-height: 3rem;
-            line-height: 1.4;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .field-value:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e1;
-        }
-
-        .empty-field {
-            color: #94a3b8;
-            font-style: italic;
-        }
-
-        .field-input {
-            width: 100%;
-            padding: 0.6rem 1rem;
-            font-size: 0.9rem;
-            font-family: inherit;
-            font-weight: 500;
-            border: 2px solid #667eea;
-            border-radius: 0.75rem;
-            outline: none;
-            background: white;
-            color: #0f172a;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e2e8f0;
-            flex-wrap: wrap;
-        }
-
-        .btn-copy {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-copy:hover {
-            background: #059669;
-        }
-
-        .btn-clear {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-clear:hover {
-            background: #dc2626;
-        }
-
-        .toast-msg {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e293b;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-
-        .copy-success {
-            background: #10b981;
-        }
-
-        .copy-error {
-            background: #ef4444;
-        }
-
-        .alert-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(4px);
-        }
-
-        .alert-content {
-            background: white;
-            border-radius: 1.5rem;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            text-align: left;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(-30px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .alert-content h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: #dc2626;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .alert-content h3::before {
-            content: "⚠️";
-            font-size: 1.5rem;
-        }
-
-        .alert-content p {
-            color: #475569;
-            margin-bottom: 1rem;
-            line-height: 1.5;
-        }
-
-        .alert-content .fields-list {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 1rem;
-            margin: 1rem 0;
-            border-radius: 0.75rem;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .alert-content .fields-list ul {
-            margin: 0.5rem 0 0 1.5rem;
-            color: #92400e;
-        }
-
-        .alert-content .fields-list li {
-            margin: 0.25rem 0;
-            font-weight: 500;
-        }
-
-        .alert-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.2s;
-        }
-
-        .alert-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-
-        @media (max-width: 780px) {
-            body {
-                padding: 1rem;
-            }
-            .fields-grid {
-                max-height: 450px;
-            }
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #eef2ff; margin: 0; min-height: 100vh; padding: 20px; }
+        .app-container { max-width: 1600px; width: 100%; background: white; border-radius: 2rem; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2); margin: 0 auto; overflow-x: auto; }
+        .login-panel, .dashboard-panel { padding: 2rem; }
+        .hidden { display: none; }
+        .header-logo { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; }
+        .logo-img { width: 70px; height: auto; border-radius: 20px; }
+        .title { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #1e3a8a, #3b82f6); background-clip: text; -webkit-background-clip: text; color: transparent; margin: 0; }
+        .login-form { max-width: 450px; margin: 1rem auto; background: #f9fafb; padding: 2rem; border-radius: 1.5rem; border: 1px solid #e0e7ff; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { font-weight: 600; display: block; margin-bottom: 0.5rem; color: #1e293b; }
+        select, input { width: 100%; padding: 12px 16px; border-radius: 60px; border: 1.5px solid #cbd5e1; font-size: 1rem; background: white; }
+        button { background: #1e3a8a; color: white; border: none; padding: 12px; border-radius: 60px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%; transition: 0.2s; }
+        button:hover { background: #2563eb; }
+        .error-msg { color: #dc2626; background: #fee2e2; padding: 10px; border-radius: 60px; text-align: center; margin-top: 1rem; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .welcome-box { background: #e0e7ff; padding: 0.5rem 1.2rem; border-radius: 40px; font-weight: 500; }
+        .logout-btn { background: #475569; width: auto; padding: 8px 20px; }
+        .date-section { background: #f8fafc; border-radius: 1.5rem; padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .card { background: white; border-radius: 1.5rem; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .card.active { border: 2px solid #1e3a8a; background: #eff6ff; transform: scale(0.98); }
+        .card:hover { background: #f1f5f9; }
+        .card h3 { margin: 0 0 0.5rem; font-size: 1rem; color: #334155; }
+        .big-number { font-size: 2rem; font-weight: 800; color: #0f172a; }
+        .sub-stats { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1; font-size: 0.8rem; }
+        .sub-stats p { display: flex; justify-content: space-between; margin: 4px 0; }
+        .badge { background: #e2e8f0; border-radius: 40px; padding: 2px 8px; }
+        .btn-clear { background: #64748b; width: auto; padding: 6px 16px; font-size: 0.8rem; margin-left: 1rem; }
+        .table-wrapper { overflow-x: auto; margin-top: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; vertical-align: top; }
+        th { background: #f1f5f9; font-weight: 600; position: sticky; top: 0; }
+        .bg-validada { background-color: #dcfce7; }
+        .bg-rechazada { background-color: #ffe4e6; }
+        .bg-pendiente { background-color: #fef9c3; }
+        .footer-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+        .info-records { background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 40px; font-size: 0.85rem; display: inline-block; }
+        .loading { text-align: center; padding: 2rem; color: #475569; }
     </style>
 </head>
 <body>
-<div class="app-container">
-    <div class="hero">
-        <h1>📋 Extractor Inteligente SIAC</h1>
-        <p>Pega el texto del promotor (cualquier formato) y automáticamente extraerá la información</p>
-        <p style="font-size: 0.85rem; margin-top: 0.5rem;">✏️ Haz clic en cualquier campo para editarlo antes de copiar</p>
-        <p style="font-size: 0.8rem; margin-top: 0.3rem;">🔍 Se limpia el texto (líneas con *, espacios múltiples) y se normalizan teléfonos a 10 dígitos</p>
+<div class="app-container" id="appContainer">
+    <!-- Login -->
+    <div id="loginPanel" class="login-panel">
+        <div class="header-logo">
+            <img class="logo-img" src="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg" alt="Logo">
+            <h1 class="title">Reporte de llamadas</h1>
+        </div>
+        <div class="login-form">
+            <div class="form-group">
+                <label>👤 Selecciona tu nombre</label>
+                <select id="nombreSelect"><option>-- Cargando --</option></select>
+            </div>
+            <div class="form-group">
+                <label>🔐 Número de Estrategia</label>
+                <input type="text" id="estrategiaInput" placeholder="Ej: 10001132">
+            </div>
+            <button id="loginBtn">Ingresar</button>
+            <div id="loginError" class="error-msg" style="display:none"></div>
+        </div>
     </div>
 
-    <div class="dashboard">
-        <div class="input-panel">
-            <label style="font-weight: 600; margin-bottom: 8px; display: block; color: #334155;">📄 Texto original del promotor</label>
-            <textarea id="rawTextInput" placeholder="Pega aquí el texto (cualquiera de los dos formatos)"></textarea>
-            <div class="button-group">
-                <button id="extractBtn" class="btn btn-primary">✨ Extraer información</button>
-                <button id="clearAllBtn" class="btn btn-secondary">🗑️ Limpiar todo</button>
-            </div>
-            <div style="margin-top: 12px; padding: 10px; background: #fef3c7; border-radius: 0.75rem; font-size: 0.75rem; color: #92400e;">
-                💡 <strong>Consejo:</strong> Soporta ambos formatos. Los campos pueden estar en la misma línea o en la siguiente.
-            </div>
+    <!-- Dashboard -->
+    <div id="dashboardPanel" class="dashboard-panel hidden">
+        <div class="header-logo">
+            <img class="logo-img" src="https://i.pinimg.com/736x/16/71/90/16719070ba26c45eb14ddf3f3d4fc69c.jpg" alt="Logo">
+            <h1 class="title">Reporte de llamadas</h1>
+        </div>
+        <div class="dashboard-header">
+            <div class="welcome-box" id="welcomeMsg">Bienvenido</div>
+            <button id="logoutBtn" class="logout-btn">Cerrar sesión</button>
+        </div>
+        <div class="date-section">
+            <span>📅 Selecciona fecha (según FECHA Y HORA REGISTRO - Columna X):</span>
+            <input type="date" id="datePicker">
         </div>
 
-        <div class="output-panel">
-            <div class="card-header">
-                <h2>📌 Datos extraídos</h2>
-                <div class="date-badge" id="fechaActualDisplay"></div>
-            </div>
-
-            <div class="fields-grid" id="fieldsContainer"></div>
-
-            <div class="action-buttons">
-                <button id="copyToClipboardBtn" class="btn btn-copy">📋 Copiar datos (Excel)</button>
-                <button id="copyTextBtn" class="btn btn-copy" style="background: #3b82f6;">📝 Copiar solo texto</button>
-                <button id="clearFieldsBtn" class="btn btn-clear">🧹 Limpiar campos</button>
-            </div>
+        <div class="cards-grid" id="cardsGrid"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0 0.5rem;">
+            <div class="info-records" id="infoRecords">Registros: --</div>
+            <button id="clearFilterBtn" class="btn-clear">Mostrar todos</button>
+        </div>
+        <div class="table-wrapper" id="tableWrapper">
+            <table id="callsTable">
+                <thead id="tableHeader"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <div class="footer-actions">
+            <button id="downloadBtn" class="btn-download">📎 Descargar tabla actual (XLSX)</button>
+        </div>
+        <div style="font-size:0.7rem; text-align:center; margin-top:1rem;">
+            Datos actualizados desde Google Sheets<br>
+            <span style="color:#888;">✏️ Edición de FOLIO SIAC deshabilitada temporalmente</span>
         </div>
     </div>
 </div>
-
-<!-- Modal de alerta personalizado -->
-<div id="alertModal" class="alert-modal">
-    <div class="alert-content">
-        <h3>Campos incompletos</h3>
-        <p>Se detectaron <strong id="emptyCount"></strong> campos obligatorios sin información:</p>
-        <div class="fields-list" id="emptyFieldsList"></div>
-        <p style="font-size: 0.85rem; color: #64748b;">⚠️ Por favor, completa estos campos antes de continuar o verifica que la información esté correctamente extraída.</p>
-        <button id="closeAlertBtn" class="alert-btn">Aceptar</button>
-    </div>
-</div>
-
-<div id="toastMessage" class="toast-msg">✅ Copiado al portapapeles</div>
 
 <script>
-    // Definición de los campos en el orden solicitado
-    const fieldsDefinition = [
-        { id: "fecha_actual", label: "Fecha Actual", key: "fecha", editable: false, required: false },
-        { id: "validador", label: "Validador", key: "validador", editable: true, required: false },
-        { id: "estatus", label: "Estatus", key: "estatus", editable: true, required: false },
-        { id: "folio_siac", label: "Folio SIAC", key: "folio", editable: true, required: true },
-        { id: "tipo_venta", label: "Tipo de Venta", key: "tipoVenta", editable: true, required: true },
-        { id: "estrategia", label: "Estrategia", key: "estrategia", editable: true, required: true },
-        { id: "gerente", label: "Gerente", key: "gerente", editable: true, required: true },
-        { id: "clave_promotor", label: "Clave de Promotor", key: "clavePromotor", editable: true, required: true },
-        { id: "nombre_cliente", label: "Nombre del Cliente", key: "nombreCliente", editable: true, required: true },
-        { id: "celular_cliente", label: "Celular Cliente", key: "celularCliente", editable: true, required: true },
-        { id: "celular_adicional", label: "Celular Adicional", key: "celularAdicional", editable: true, required: false },
-        { id: "correo_cliente", label: "Correo Electrónico", key: "correo", editable: true, required: false },
-        { id: "direccion_completa", label: "Dirección Completa", key: "direccionCompleta", editable: true, required: true },
-        { id: "precio_paquete", label: "Costo del Paquete", key: "precioPaquete", editable: true, required: true },
-        { id: "megas", label: "Megas", key: "megas", editable: true, required: true },
-        { id: "gastos_instalacion", label: "Gastos de Instalación", key: "gastosInstalacion", editable: true, required: true },
-        { id: "beneficios", label: "Beneficios que incluye", key: "beneficios", editable: true, required: true },
-        { id: "observaciones", label: "Observaciones", key: "observaciones", editable: true, required: false }
+    // ==================== CONFIGURACIÓN ====================
+    const SPREADSHEET_ID = '1iwt0QCDSegTz_XSgh3njl8uwv1JZUtSYQ-Dx6mfIfkQ';
+    const SHEET_ESTRATEGIAS = 'ESTRATEGIAS';
+    const SHEET_DATA = 'Data';
+
+    // Índices de columnas
+    const COL_FECHA_REGISTRO = 23;
+    const COL_ESTATUS = 2;
+    const COL_FOLIO = 3;
+    const COL_TIPO_VENTA = 4;
+    const COL_ESTRATEGIA = 5;
+    const COL_GERENTE = 6;
+    const COL_CLAVE_PROMOTOR = 7;
+    const COL_NOMBRE_CLIENTE = 8;
+    const COL_CELULAR_RECIENTE = 9;
+    const COL_CELULAR_REF = 10;
+    const COL_CORREO = 11;
+    const COL_DIRECCION = 12;
+    const COL_COSTO_PLAN = 13;
+    const COL_VELOCIDAD = 14;
+    const COL_GASTOS_INSTALACION = 15;
+    const COL_BENEFICIOS = 16;
+    const COL_OBSERVACIONES = 17;
+    const COL_ESTADO2 = 20;
+    const COL_N_INTENTOS = 39;
+
+    const IDX_NOMBRE = 0;
+    const IDX_ESTRATEGIA_EST = 1;
+
+    let estrategiasList = [];
+    let rawDataRows = [];
+    let rawDataRowsOriginal = [];
+    let dataStartRow = 0;
+    let loggedStrategyRaw = null;
+    let loggedUserName = null;
+    let currentDate = null;
+    let currentFilteredRows = [];
+    let activeStatusFilter = null;
+
+    // Elementos DOM
+    const loginPanel = document.getElementById('loginPanel');
+    const dashboardPanel = document.getElementById('dashboardPanel');
+    const nombreSelect = document.getElementById('nombreSelect');
+    const estrategiaInput = document.getElementById('estrategiaInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const welcomeMsg = document.getElementById('welcomeMsg');
+    const datePicker = document.getElementById('datePicker');
+    const cardsGrid = document.getElementById('cardsGrid');
+    const tableHeader = document.getElementById('tableHeader');
+    const tableBody = document.getElementById('tableBody');
+    const infoRecords = document.getElementById('infoRecords');
+    const clearFilterBtn = document.getElementById('clearFilterBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // ========== FUNCIÓN PARA EXTRAER FECHA ==========
+    function extraerFechaDesdeDateTime(valor) {
+        if (valor === undefined || valor === null || valor === '') return null;
+        if (valor instanceof Date && !isNaN(valor)) {
+            return `${valor.getFullYear()}-${String(valor.getMonth()+1).padStart(2,'0')}-${String(valor.getDate()).padStart(2,'0')}`;
+        }
+        if (typeof valor === 'number') {
+            if (valor > 40000 && valor < 50000) {
+                const date = new Date(Math.round((valor - 25569) * 86400 * 1000));
+                return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+            }
+            const d = new Date(valor);
+            if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        let str = String(valor).trim();
+        if (str.startsWith('Date(')) {
+            const match = str.match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/);
+            if (match) {
+                let y = parseInt(match[1]), m = parseInt(match[2]), d = parseInt(match[3]);
+                const fecha = new Date(Date.UTC(y, m, d));
+                if (!isNaN(fecha)) {
+                    return `${fecha.getUTCFullYear()}-${String(fecha.getUTCMonth()+1).padStart(2,'0')}-${String(fecha.getUTCDate()).padStart(2,'0')}`;
+                }
+            }
+        }
+        let fechaPart = str.split(' ')[0];
+        if (fechaPart && fechaPart.match(/^\d{4}[-\/]\d{2}[-\/]\d{2}/)) {
+            let fechaLimpia = fechaPart.replace(/\//g, '-');
+            if (fechaLimpia.match(/^\d{4}-\d{2}-\d{2}$/)) return fechaLimpia;
+        }
+        const d = new Date(str);
+        if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return null;
+    }
+
+    // ========== OBTENER DATOS ==========
+    async function fetchSheetData(sheetName) {
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+        const resp = await fetch(url);
+        const text = await resp.text();
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}');
+        if (jsonStart === -1) throw new Error('JSON no encontrado');
+        const jsonStr = text.substring(jsonStart, jsonEnd + 1);
+        const parsed = JSON.parse(jsonStr);
+        return parsed.table.rows.map(row => row.c.map(cell => (cell && cell.v !== undefined) ? cell.v : ''));
+    }
+
+    async function loadEstrategias() {
+        try {
+            const data = await fetchSheetData(SHEET_ESTRATEGIAS);
+            let start = 0;
+            if (data.length && (String(data[0][IDX_NOMBRE]).toLowerCase().includes('nombre') || String(data[0][IDX_ESTRATEGIA_EST]).toLowerCase().includes('estrategia'))) start = 1;
+            estrategiasList = [];
+            for (let i = start; i < data.length; i++) {
+                let nombre = data[i][IDX_NOMBRE] ? String(data[i][IDX_NOMBRE]).trim() : '';
+                let estr = data[i][IDX_ESTRATEGIA_EST] !== undefined ? String(data[i][IDX_ESTRATEGIA_EST]).trim() : '';
+                if (nombre && estr) estrategiasList.push({ nombre, estrategia: estr });
+            }
+            if (!estrategiasList.length) throw new Error('No hay usuarios en ESTRATEGIAS');
+            nombreSelect.innerHTML = '<option value="">-- Selecciona --</option>';
+            estrategiasList.forEach(item => {
+                let opt = document.createElement('option');
+                opt.value = item.nombre;
+                opt.textContent = item.nombre;
+                nombreSelect.appendChild(opt);
+            });
+            return true;
+        } catch (err) {
+            loginError.textContent = `Error cargando usuarios: ${err.message}`;
+            loginError.style.display = 'block';
+            return false;
+        }
+    }
+
+    async function loadDataRows() {
+        try {
+            const allRows = await fetchSheetData(SHEET_DATA);
+            if (!allRows.length) throw new Error('Data vacía');
+            rawDataRowsOriginal = [...allRows];
+            let startRow = 0;
+            if (allRows.length && (String(allRows[0][0]).toLowerCase().includes('fecha') || String(allRows[0][COL_ESTRATEGIA]).toLowerCase().includes('estrategia'))) {
+                startRow = 1;
+            }
+            dataStartRow = startRow;
+            rawDataRows = [];
+            for (let i = startRow; i < allRows.length; i++) {
+                let row = [...allRows[i]];
+                let fechaSolo = extraerFechaDesdeDateTime(row[COL_FECHA_REGISTRO]);
+                row.push(fechaSolo);
+                rawDataRows.push(row);
+            }
+            console.log(`📊 Filas cargadas: ${rawDataRows.length} (startRow=${startRow})`);
+            return true;
+        } catch (err) {
+            alert(`Error cargando llamadas: ${err.message}`);
+            return false;
+        }
+    }
+
+    // ========== FILTRADO ==========
+    function getRowsByStrategyAndDate(dateYMD) {
+        if (!rawDataRows.length) return [];
+        return rawDataRows.filter(row => {
+            let rowEstr = row[COL_ESTRATEGIA];
+            if (rowEstr === undefined) return false;
+            let rowStr = String(rowEstr).trim();
+            let loggedStr = String(loggedStrategyRaw).trim();
+            let matchEstrategia = !isNaN(parseFloat(rowStr)) && !isNaN(parseFloat(loggedStr)) 
+                ? parseFloat(rowStr) === parseFloat(loggedStr)
+                : rowStr === loggedStr;
+            if (!matchEstrategia) return false;
+            const fechaFila = row[row.length - 1];
+            return fechaFila === dateYMD;
+        });
+    }
+
+    // ========== TARJETAS ==========
+    function computeStatsFromRows(rows) {
+        let completadas = 0, rechazadas = 0, noContesta = 0, enProceso = 0, pendientes = 0;
+        let validadas = 0, pendPromotor = 0, servCancel = 0, llamProg = 0;
+        for (const row of rows) {
+            let estado = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+            if (estado === 'COMPLETADA') {
+                completadas++;
+                let sub = String(row[COL_ESTATUS] || '').toLowerCase();
+                if (sub.includes('validada')) validadas++;
+                else if (sub.includes('pendiente por promotor')) pendPromotor++;
+                else if (sub.includes('servicio cancelado')) servCancel++;
+                else if (sub.includes('llamada programada')) llamProg++;
+            } else if (estado === 'RECHAZADA') rechazadas++;
+            else if (estado === 'NO CONTESTA') noContesta++;
+            else if (estado === 'EN PROCESO') enProceso++;
+            else if (estado === 'PENDIENTE' || estado === 'DISPONIBLE') pendientes++;
+        }
+        return { completadas, rechazadas, noContesta, enProceso, pendientes, validadas, pendPromotor, servCancel, llamProg };
+    }
+
+    function renderCards(stats) {
+        const { completadas, rechazadas, noContesta, enProceso, pendientes, validadas, pendPromotor, servCancel, llamProg } = stats;
+        cardsGrid.innerHTML = `
+            <div class="card" data-status="COMPLETADA"><h3>✅ Completadas</h3><div class="big-number">${completadas}</div>
+                <div class="sub-stats"><p><span>✔️ Validadas</span><span>${validadas}</span></p>
+                <p><span>⏳ Pend. Promotor</span><span>${pendPromotor}</span></p>
+                <p><span>❌ Serv. Cancelado</span><span>${servCancel}</span></p>
+                <p><span>📅 Prog.</span><span>${llamProg}</span></p></div></div>
+            <div class="card" data-status="RECHAZADA"><h3>🚫 Rechazadas</h3><div class="big-number">${rechazadas}</div></div>
+            <div class="card" data-status="NO CONTESTA"><h3>📞 No Contesta</h3><div class="big-number">${noContesta}</div></div>
+            <div class="card" data-status="EN PROCESO"><h3>🔄 En Proceso</h3><div class="big-number">${enProceso}</div></div>
+            <div class="card" data-status="PENDIENTE"><h3>⏰ Pendientes</h3><div class="big-number">${pendientes}</div></div>
+        `;
+        document.querySelectorAll('.card').forEach(card => {
+            if (activeStatusFilter && card.dataset.status === activeStatusFilter) card.classList.add('active');
+            else card.classList.remove('active');
+            card.addEventListener('click', () => {
+                let status = card.dataset.status;
+                if (activeStatusFilter === status) activeStatusFilter = null;
+                else activeStatusFilter = status;
+                updateTableAndInfo();
+                renderCards(stats);
+                localStorage.setItem('activeStatusFilter', activeStatusFilter || '');
+            });
+        });
+    }
+
+    // ========== TABLA (SIN EDICIÓN DE FOLIO) ==========
+    const columnMapping = [
+        { label: "#", getValue: (row, idx) => idx + 1 },
+        { label: "FECHA (Registro)", getValue: row => row[row.length-1] || '' },
+        { label: "ESTATUS (detalle)", getValue: row => row[COL_ESTATUS] || '' },
+        { label: "ESTADO2", getValue: row => row[COL_ESTADO2] || '' },
+        { label: "N° de INTENTOS", getValue: row => row[COL_N_INTENTOS] || '' },
+        { label: "FOLIO SIAC", getValue: row => row[COL_FOLIO] || '' },   // ← SOLO TEXTO, SIN BOTÓN
+        { label: "TIPO DE VENTA", getValue: row => row[COL_TIPO_VENTA] || '' },
+        { label: "CLAVE PROMOTOR", getValue: row => row[COL_CLAVE_PROMOTOR] || '' },
+        { label: "NOMBRE CLIENTE", getValue: row => row[COL_NOMBRE_CLIENTE] || '' },
+        { label: "CELULAR RECIENTE", getValue: row => row[COL_CELULAR_RECIENTE] || '' },
+        { label: "CELULAR REFERENCIA", getValue: row => row[COL_CELULAR_REF] || '' },
+        { label: "CORREO", getValue: row => row[COL_CORREO] || '' },
+        { label: "DIRECCIÓN", getValue: row => row[COL_DIRECCION] || '' },
+        { label: "COSTO DEL PLAN", getValue: row => row[COL_COSTO_PLAN] || '' },
+        { label: "VELOCIDAD", getValue: row => row[COL_VELOCIDAD] || '' },
+        { label: "GASTOS DE INSTALACIÓN", getValue: row => row[COL_GASTOS_INSTALACION] || '' },
+        { label: "BENEFICIOS", getValue: row => row[COL_BENEFICIOS] || '' },
+        { label: "OBSERVACIONES", getValue: row => row[COL_OBSERVACIONES] || '' }
     ];
 
-    let uiElements = {};
-    let currentEditingField = null;
+    function getRowBackgroundClass(row) {
+        let estado2 = String(row[COL_ESTADO2] || '').toUpperCase();
+        let estatus = String(row[COL_ESTATUS] || '').toLowerCase();
+        if (estado2 === 'COMPLETADA' && estatus.includes('validada')) return 'bg-validada';
+        if (estado2 === 'RECHAZADA' || estatus.includes('servicio cancelado')) return 'bg-rechazada';
+        if (estado2 === 'PENDIENTE' || estado2 === 'DISPONIBLE' || estatus.includes('llamada programada')) return 'bg-pendiente';
+        return '';
+    }
 
-    function buildUI() {
-        const container = document.getElementById('fieldsContainer');
-        container.innerHTML = '';
-        
-        fieldsDefinition.forEach(field => {
-            const fieldDiv = document.createElement('div');
-            fieldDiv.className = 'field-item';
-            
-            const valueDiv = document.createElement('div');
-            valueDiv.className = 'field-value empty-field';
-            valueDiv.id = `${field.id}Val`;
-            valueDiv.textContent = '—';
-            
-            if (field.editable) {
-                valueDiv.style.cursor = 'pointer';
-                valueDiv.title = 'Haz clic para editar';
-                valueDiv.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    makeEditable(field.id, valueDiv);
+    function renderTable(rows) {
+        tableHeader.innerHTML = `<tr>${columnMapping.map(col => `<th>${col.label}</th>`).join('')}</tr>`;
+        if (!rows.length) {
+            tableBody.innerHTML = `<tr><td colspan="${columnMapping.length}">No hay datos para esta fecha y estrategia</td></tr>`;
+            return;
+        }
+        let tbodyHtml = '';
+        rows.forEach((row, idx) => {
+            let bgClass = getRowBackgroundClass(row);
+            let rowHtml = `<tr class="${bgClass}">`;
+            for (let col of columnMapping) {
+                let value = col.getValue(row, idx, row, idx);
+                rowHtml += `<td>${value !== undefined && value !== null ? value : ''}</td>`;
+            }
+            rowHtml += `</tr>`;
+            tbodyHtml += rowHtml;
+        });
+        tableBody.innerHTML = tbodyHtml;
+    }
+
+    function updateTableAndInfo() {
+        if (!currentDate || !loggedStrategyRaw) return;
+        let allRowsForDate = getRowsByStrategyAndDate(currentDate);
+        let filteredRows = allRowsForDate;
+        if (activeStatusFilter) {
+            if (activeStatusFilter === 'PENDIENTE') {
+                filteredRows = allRowsForDate.filter(row => {
+                    let estado = String(row[COL_ESTADO2] || '').trim().toUpperCase();
+                    return estado === 'PENDIENTE' || estado === 'DISPONIBLE';
                 });
             } else {
-                valueDiv.style.cursor = 'default';
+                filteredRows = allRowsForDate.filter(row => String(row[COL_ESTADO2] || '').trim().toUpperCase() === activeStatusFilter);
             }
-            
-            fieldDiv.innerHTML = `<div class="field-label">${field.label}</div>`;
-            fieldDiv.appendChild(valueDiv);
-            container.appendChild(fieldDiv);
-            uiElements[field.id] = valueDiv;
-        });
-        
-        updateDate();
-    }
-
-    function makeEditable(fieldId, element) {
-        if (currentEditingField) saveCurrentEdit();
-        const currentValue = element.textContent;
-        const isEmpty = currentValue === '—';
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'field-input';
-        input.value = isEmpty ? '' : currentValue;
-        element.style.display = 'none';
-        element.parentNode.insertBefore(input, element);
-        input.focus();
-        input.select();
-        currentEditingField = { fieldId, element, input, originalValue: isEmpty ? '' : currentValue };
-        input.addEventListener('blur', () => saveCurrentEdit());
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') saveCurrentEdit();
-            if (e.key === 'Escape') cancelEdit();
-        });
-    }
-    
-    function saveCurrentEdit() {
-        if (!currentEditingField) return;
-        const { element, input } = currentEditingField;
-        const newValue = input.value.trim();
-        if (newValue === '') {
-            element.textContent = '—';
-            element.classList.add('empty-field');
-        } else {
-            element.textContent = newValue;
-            element.classList.remove('empty-field');
         }
-        element.style.display = 'block';
-        input.remove();
-        currentEditingField = null;
-    }
-    
-    function cancelEdit() {
-        if (!currentEditingField) return;
-        const { element, input } = currentEditingField;
-        element.style.display = 'block';
-        input.remove();
-        currentEditingField = null;
+        currentFilteredRows = filteredRows;
+        renderTable(filteredRows);
+        infoRecords.textContent = `Mostrando ${filteredRows.length} de ${allRowsForDate.length} registros para ${currentDate} ${activeStatusFilter ? `(filtro: ${activeStatusFilter})` : ''}`;
     }
 
-    function updateDate() {
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, '0');
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const year = today.getFullYear();
-        const formattedDate = `${day}/${month}/${year}`;
-        if (uiElements['fecha_actual']) {
-            uiElements['fecha_actual'].textContent = formattedDate;
-            uiElements['fecha_actual'].classList.remove('empty-field');
+    async function refreshDashboard() {
+        if (!currentDate) return;
+        let allRowsForDate = getRowsByStrategyAndDate(currentDate);
+        let stats = computeStatsFromRows(allRowsForDate);
+        renderCards(stats);
+        updateTableAndInfo();
+    }
+
+    function downloadExcel() {
+        if (!currentFilteredRows.length) {
+            alert("No hay datos para exportar.");
+            return;
         }
-        const fechaElem = document.getElementById('fechaActualDisplay');
-        if (fechaElem) fechaElem.innerText = `📅 ${formattedDate}`;
+        let sheetData = [columnMapping.map(col => col.label)];
+        for (let i = 0; i < currentFilteredRows.length; i++) {
+            let row = currentFilteredRows[i];
+            let rowData = [];
+            for (let col of columnMapping) {
+                let value = col.getValue(row, i, row, i);
+                rowData.push(value !== undefined && value !== null ? value : '');
+            }
+            sheetData.push(rowData);
+        }
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `Llamadas_${loggedStrategyRaw}_${currentDate}`);
+        XLSX.writeFile(wb, `llamadas_${loggedStrategyRaw}_${currentDate}.xlsx`);
     }
 
-    // ==================== LIMPIEZA PREVIA DEL TEXTO ====================
-    function preprocessText(rawText) {
-        // Dividir en líneas
-        let lines = rawText.split(/\r?\n/);
-        
-        // 1. Eliminar líneas que comienzan con uno o más asteriscos y/o espacios
-        //    También eliminar líneas que consisten solo de asteriscos y espacios
-        lines = lines.filter(line => {
-            const trimmedStart = line.trimStart();
-            // Si la línea empieza con * (y posiblemente espacios antes), la eliminamos
-            if (/^\s*\*+/.test(line)) return false;
-            // Si la línea está vacía después de trim, la conservamos (los saltos de línea pueden ser necesarios)
-            return true;
-        });
-        
-        // 2. Reemplazar dos o más espacios en blanco consecutivos por uno solo, en cada línea
-        lines = lines.map(line => {
-            // Colapsar espacios múltiples
-            let cleaned = line.replace(/[ ]{2,}/g, ' ');
-            // Eliminar espacios al inicio y final de la línea (opcional, pero ayuda)
-            cleaned = cleaned.trim();
-            return cleaned;
-        });
-        
-        // Unir las líneas nuevamente con saltos de línea
-        let processedText = lines.join('\n');
-        
-        // Opcional: eliminar saltos de línea excesivos (más de dos seguidos)
-        processedText = processedText.replace(/\n{3,}/g, '\n\n');
-        
-        return processedText;
-    }
-    // ==================== FIN LIMPIEZA PREVIA ====================
-
-    // ==================== LIMPIEZA DE CARACTERES ====================
-    function cleanValue(value) {
-        if (!value) return '';
-        // Eliminar todos los caracteres * y $ del texto extraído
-        return value.replace(/[*$]/g, '').trim();
+    // ========== PERSISTENCIA Y LOGIN ==========
+    function saveSession() {
+        if (loggedUserName && loggedStrategyRaw && currentDate) {
+            localStorage.setItem('loggedUserName', loggedUserName);
+            localStorage.setItem('loggedStrategyRaw', loggedStrategyRaw);
+            localStorage.setItem('currentDate', currentDate);
+            localStorage.setItem('activeStatusFilter', activeStatusFilter || '');
+        }
     }
 
-    // ==================== NORMALIZACIÓN DE TELÉFONOS ====================
-    function normalizePhone(phone) {
-        if (!phone) return '';
-        // Eliminar todo excepto dígitos
-        const digits = phone.replace(/\D/g, '');
-        // Si tiene exactamente 10 dígitos, devolverlos como string; de lo contrario devolver el original limpio (sin caracteres no numéricos)
-        if (digits.length === 10) {
-            return digits;
-        }
-        // Si no tiene 10 dígitos, devolvemos el valor original pero sin caracteres no numéricos (por si es un número incompleto)
-        return digits;
-    }
-
-    // Función auxiliar para capturar valor después de una etiqueta (puede estar en la misma línea o en la siguiente) y limpiarlo
-    function extractValue(text, labelPattern, flags = 'i') {
-        const regex = new RegExp(`${labelPattern}\\s*:?\\s*\\n?\\s*(.*?)(?=\\n\\s*\\n|\\n\\s*[A-ZÁÉÍÓÚÑa-z]|$)`, flags);
-        const match = text.match(regex);
-        if (match && match[1]) {
-            let value = match[1].trim();
-            if (value === '' || value === '-' || value === 'n/a') return '';
-            return cleanValue(value);
-        }
-        return '';
-    }
-
-    // Extraer beneficios (lista después de "Incluye:") y limpiar * y $
-    function extractBenefits(text) {
-        const includeMatch = text.match(/Incluye:\s*\n?([\s\S]*?)(?=\n\s*\n|\n\s*[A-ZÁÉÍÓÚÑ]|$)/i);
-        if (includeMatch && includeMatch[1]) {
-            let benefitsText = includeMatch[1];
-            const lines = benefitsText.split('\n')
-                .map(line => line.replace(/^[\s*\-•]+/, '').trim())
-                .filter(line => line.length > 0 && !line.match(/^Promocion:/i));
-            // Limpiar cada línea de * y $ antes de unir
-            const cleanedLines = lines.map(line => cleanValue(line));
-            return cleanedLines.join(', ');
-        }
-        return '';
-    }
-
-    function extractData(text) {
-        // Aplicar limpieza previa al texto
-        const cleanedText = preprocessText(text);
-        
-        const data = {};
-
-        // 1. Tipo de Venta y Folio SIAC (primer formato: "SERVICIO NUEVO: 12345")
-        const firstLine = cleanedText.split('\n')[0].trim();
-        if (firstLine.includes(':')) {
-            const tipoMatch = firstLine.match(/^([^:]+)/);
-            data.tipoVenta = tipoMatch ? cleanValue(tipoMatch[1].trim()) : '';
-            const folioMatch = firstLine.match(/:\s*(\d+)/);
-            data.folio = folioMatch ? cleanValue(folioMatch[1].trim()) : '';
-        } else {
-            data.tipoVenta = cleanValue(firstLine);
-            data.folio = '';
-        }
-        // Si no se encontró folio, intentar con "SERVICIO NUEVO:" en cualquier parte
-        if (!data.folio) {
-            const folioAny = cleanedText.match(/SERVICIO NUEVO:\s*(\d+)/i);
-            data.folio = folioAny ? cleanValue(folioAny[1].trim()) : '';
-        }
-        // También probar con "TIPO DE SERVICIO" (nuevo formato)
-        if (!data.tipoVenta || data.tipoVenta === '') {
-            const tipoServicio = extractValue(cleanedText, 'TIPO DE SERVICIO');
-            if (tipoServicio) data.tipoVenta = tipoServicio;
-        }
-
-        // 2. Gerente (formato original: "Gerente de zona:")
-        let gerente = extractValue(cleanedText, 'Gerente de zona');
-        if (!gerente) gerente = extractValue(cleanedText, 'Gerente');
-        data.gerente = gerente.replace(/\.$/, '');
-
-        // 3. Clave de Promotor (original: "Clave promotor:", nuevo: "Promotor:")
-        let clave = extractValue(cleanedText, 'Clave promotor');
-        if (!clave) clave = extractValue(cleanedText, 'Promotor');
-        data.clavePromotor = clave;
-
-        // 4. Nombre del Cliente
-        let nombre = extractValue(cleanedText, 'Nombre del cliente');
-        if (!nombre) nombre = extractValue(cleanedText, 'Nombre del  cliente');
-        data.nombreCliente = nombre;
-
-        // 5. Celular Cliente (original: "* Celular del cliente:", nuevo: "Cel cliente:")
-        let cel = extractValue(cleanedText, 'Celular del cliente');
-        if (!cel) cel = extractValue(cleanedText, 'Cel cliente');
-        // Normalizar teléfono
-        data.celularCliente = normalizePhone(cel);
-
-        // 6. Celular Adicional (original: "* Celular adicional 1:", nuevo: "Cel referencia:")
-        let celAdd = extractValue(cleanedText, 'Celular adicional');
-        if (!celAdd) celAdd = extractValue(cleanedText, 'Cel referencia');
-        data.celularAdicional = normalizePhone(celAdd);
-
-        // 7. Correo Electrónico
-        let correo = extractValue(cleanedText, 'Correo');
-        data.correo = correo;
-
-        // 8. Dirección (partes) - nuevo formato tiene Domicilio, Entrecalles, colonia y código postal, Municipio
-        let dir1 = extractValue(cleanedText, 'Domicilio');
-        let dir2 = extractValue(cleanedText, 'Entrecalles');
-        let dir3 = extractValue(cleanedText, 'colonia y código postal');
-        let dir4 = extractValue(cleanedText, 'Municipio');
-        // Si no se encuentra en nuevo formato, usar el original (Calle y número, Entre calle 1, Entre calle 2, Colonia, Municipio, Código postal)
-        if (!dir1) dir1 = extractValue(cleanedText, 'Calle y número');
-        if (!dir2) dir2 = extractValue(cleanedText, 'Entre calle 1');
-        if (!dir3) dir3 = extractValue(cleanedText, 'Entre calle 2');
-        if (!dir4) dir4 = extractValue(cleanedText, 'Municipio');
-        let colonia = extractValue(cleanedText, 'Colonia');
-        let cp = extractValue(cleanedText, 'Código postal');
-        
-        // Construir dirección completa (similar a como se hacía antes)
-        const addressParts = [];
-        if (dir1) addressParts.push(`Calle y número ${dir1}`);
-        if (dir2 && dir3) addressParts.push(`Entre calle ${dir2} y calle ${dir3}`);
-        else if (dir2) addressParts.push(`Entre calle ${dir2}`);
-        else if (dir3) addressParts.push(`Entre calle ${dir3}`);
-        if (colonia) addressParts.push(`Colonia ${colonia}`);
-        if (dir4) addressParts.push(`Municipio ${dir4}`);
-        if (cp) addressParts.push(`Código postal ${cp}`);
-        data.direccionCompleta = addressParts.join(' ');
-
-        // 9. Precio del Paquete y Megas (nuevo formato: "Paquete: $349 - 120mg")
-        let precio = '';
-        let megas = '';
-        const paqueteMatch = cleanedText.match(/Paquete:\s*\$?([\d,]+)\s*-\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
-        if (paqueteMatch) {
-            precio = `$${cleanValue(paqueteMatch[1].trim())}`;
-            megas = `${cleanValue(paqueteMatch[2].trim())} Mbps`;
-        } else {
-            // Formato original: "$ Precio del Paquete: $349" y "Megas: 120mg"
-            const precioOrig = cleanedText.match(/\$\s*Precio del Paquete:\s*\$([^\n]+)/i);
-            precio = precioOrig ? `$${cleanValue(precioOrig[1].trim())}` : '';
-            const megasOrig = cleanedText.match(/Megas:\s*(\d+(?:\.\d+)?)\s*(?:mg|mbps|Mbps)?/i);
-            megas = megasOrig ? `${cleanValue(megasOrig[1].trim())} Mbps` : '';
-        }
-        data.precioPaquete = precio;
-        data.megas = megas;
-
-        // 10. Gastos de Instalación (solo en formato original)
-        let gastos = extractValue(cleanedText, 'Gastos de instalación');
-        if (gastos) data.gastosInstalacion = `$${gastos}`;
-        else data.gastosInstalacion = '';
-
-        // 11. Beneficios que incluye (nuevo formato: "Incluye:" lista, o el mismo del original)
-        let beneficios = extractBenefits(cleanedText);
-        data.beneficios = beneficios;
-
-        // 12. Estrategia (original: "Célula:", nuevo formato no tiene, pero se puede dejar vacío)
-        let estrategia = extractValue(cleanedText, 'Célula');
-        data.estrategia = estrategia;
-
-        // 13. Observaciones siempre vacío
-        data.observaciones = '';
-
-        return data;
-    }
-
-    // ==================== FIN NUEVA EXTRACCIÓN ====================
-
-    function hasAnyData() {
-        for (const field of fieldsDefinition) {
-            if (field.id === 'fecha_actual') continue;
-            const element = uiElements[field.id];
-            if (element) {
-                const value = element.textContent;
-                if (value !== '—' && value !== '' && value.trim() !== '') return true;
+    async function restoreSession() {
+        const savedName = localStorage.getItem('loggedUserName');
+        const savedStrategy = localStorage.getItem('loggedStrategyRaw');
+        const savedDate = localStorage.getItem('currentDate');
+        const savedFilter = localStorage.getItem('activeStatusFilter');
+        if (savedName && savedStrategy && savedDate) {
+            await loadEstrategias();
+            const valid = estrategiasList.some(i => i.nombre === savedName && i.estrategia === savedStrategy);
+            if (valid) {
+                loggedUserName = savedName;
+                loggedStrategyRaw = savedStrategy;
+                currentDate = savedDate;
+                activeStatusFilter = savedFilter || null;
+                const ok = await loadDataRows();
+                if (ok) {
+                    loginPanel.classList.add('hidden');
+                    dashboardPanel.classList.remove('hidden');
+                    welcomeMsg.innerHTML = `👋 Bienvenido, ${loggedUserName} (Estrategia: ${loggedStrategyRaw})`;
+                    datePicker.value = currentDate;
+                    await refreshDashboard();
+                    return true;
+                }
             }
         }
         return false;
     }
 
-    function checkEmptyFields(showAlert = true) {
-        const emptyFields = [];
-        for (const field of fieldsDefinition) {
-            if (!field.required) continue;
-            const element = uiElements[field.id];
-            if (element) {
-                const value = element.textContent;
-                if (value === '—' || value === '' || value.trim() === '') emptyFields.push(field.label);
-            }
+    async function handleLogin() {
+        loginError.style.display = 'none';
+        const selectedName = nombreSelect.value;
+        const enteredStrategy = estrategiaInput.value.trim();
+        if (!selectedName || !enteredStrategy) {
+            loginError.textContent = 'Complete nombre y estrategia.';
+            loginError.style.display = 'block';
+            return;
         }
-        if (showAlert && emptyFields.length >= 3) showEmptyFieldsAlert(emptyFields);
-    }
-    
-    function showEmptyFieldsAlert(emptyFields) {
-        const modal = document.getElementById('alertModal');
-        const emptyCountSpan = document.getElementById('emptyCount');
-        const emptyFieldsListDiv = document.getElementById('emptyFieldsList');
-        emptyCountSpan.textContent = emptyFields.length;
-        const ul = document.createElement('ul');
-        emptyFields.forEach(field => { const li = document.createElement('li'); li.textContent = field; ul.appendChild(li); });
-        emptyFieldsListDiv.innerHTML = '';
-        emptyFieldsListDiv.appendChild(ul);
-        modal.style.display = 'flex';
-        const closeBtn = document.getElementById('closeAlertBtn');
-        const closeModal = () => { modal.style.display = 'none'; closeBtn.removeEventListener('click', closeModal); };
-        closeBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-    }
-
-    function populateFields(data) {
-        const mapping = {
-            'validador': "", 'estatus': "", 'folio_siac': data.folio || "", 'tipo_venta': data.tipoVenta || "",
-            'estrategia': data.estrategia || "", 'gerente': data.gerente || "", 'clave_promotor': data.clavePromotor || "",
-            'nombre_cliente': data.nombreCliente || "", 'celular_cliente': data.celularCliente || "",
-            'celular_adicional': data.celularAdicional || "", 'correo_cliente': data.correo || "",
-            'direccion_completa': data.direccionCompleta || "", 'precio_paquete': data.precioPaquete || "",
-            'megas': data.megas || "", 'gastos_instalacion': data.gastosInstalacion || "",
-            'beneficios': data.beneficios || "", 'observaciones': data.observaciones || ""
-        };
-        for (const [fieldId, value] of Object.entries(mapping)) {
-            if (uiElements[fieldId]) {
-                if (value && value.trim() !== "") {
-                    uiElements[fieldId].textContent = value;
-                    uiElements[fieldId].classList.remove('empty-field');
-                } else {
-                    uiElements[fieldId].textContent = "—";
-                    uiElements[fieldId].classList.add('empty-field');
-                }
-            }
+        const match = estrategiasList.find(i => i.nombre === selectedName && i.estrategia === enteredStrategy);
+        if (!match) {
+            loginError.textContent = 'Acceso denegado.';
+            loginError.style.display = 'block';
+            return;
         }
-        updateDate();
-        checkEmptyFields(true);
+        loggedStrategyRaw = match.estrategia;
+        loggedUserName = match.nombre;
+        const ok = await loadDataRows();
+        if (!ok) return;
+        loginPanel.classList.add('hidden');
+        dashboardPanel.classList.remove('hidden');
+        welcomeMsg.innerHTML = `👋 Bienvenido, ${loggedUserName} (Estrategia: ${loggedStrategyRaw})`;
+        const today = new Date();
+        currentDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        datePicker.value = currentDate;
+        activeStatusFilter = null;
+        await refreshDashboard();
+        saveSession();
     }
 
-    function getDataArray() {
-        const getValue = (fieldId) => {
-            const elem = uiElements[fieldId];
-            if (!elem) return "";
-            const value = elem.textContent;
-            return value === "—" ? "" : value;
-        };
-        return [
-            getValue('fecha_actual'), getValue('validador'), getValue('estatus'), getValue('folio_siac'),
-            getValue('tipo_venta'), getValue('estrategia'), getValue('gerente'), getValue('clave_promotor'),
-            getValue('nombre_cliente'), getValue('celular_cliente'), getValue('celular_adicional'),
-            getValue('correo_cliente'), getValue('direccion_completa'), getValue('precio_paquete'),
-            getValue('megas'), getValue('gastos_instalacion'), getValue('beneficios'), getValue('observaciones')
-        ];
+    function logout() {
+        loggedStrategyRaw = null;
+        loggedUserName = null;
+        rawDataRows = [];
+        activeStatusFilter = null;
+        dashboardPanel.classList.add('hidden');
+        loginPanel.classList.remove('hidden');
+        localStorage.clear();
+        loadEstrategias();
     }
 
-    function getExcelData() {
-        const baseData = getDataArray();
-        const extraData = ["", "", "DISPONIBLE"];
-        return [...baseData, ...extraData].join("\t");
-    }
-    
-    async function copyToClipboard(text, successMsg = "✅ Copiado al portapapeles") {
-        if (currentEditingField) saveCurrentEdit();
-        if (navigator.clipboard && window.isSecureContext) {
-            try {
-                await navigator.clipboard.writeText(text);
-                showToast(successMsg, 'success');
-                return true;
-            } catch (err) { console.warn(err); }
-        }
-        try {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
-            document.body.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-            const successful = document.execCommand('copy');
-            document.body.removeChild(textarea);
-            if (successful) { showToast(successMsg, 'success'); return true; }
-            else throw new Error('execCommand failed');
-        } catch (err) {
-            showToast('❌ No se pudo copiar. Copia manualmente.', 'error');
-            return false;
-        }
-    }
-
-    async function copyExcelFormat() {
-        if (!hasAnyData()) { showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error'); return; }
-        await copyToClipboard(getExcelData(), "📋 Datos copiados (formato Excel). ¡Listo para pegar!");
-    }
-
-    function getReadableText() {
-        const fieldIds = ['fecha_actual','validador','estatus','folio_siac','tipo_venta','estrategia','gerente','clave_promotor','nombre_cliente','celular_cliente','celular_adicional','correo_cliente','direccion_completa','precio_paquete','megas','gastos_instalacion','beneficios','observaciones'];
-        const values = [];
-        for (const id of fieldIds) {
-            const elem = uiElements[id];
-            if (elem) { const v = elem.textContent; if (v !== '—' && v !== '') values.push(v); }
-        }
-        return values.join('\n');
-    }
-
-    async function copyTextFormat() {
-        if (!hasAnyData()) { showToast("⚠️ No hay datos para copiar. Primero extrae información.", 'error'); return; }
-        await copyToClipboard(getReadableText(), "📝 Datos copiados en formato texto");
-    }
-
-    function performExtraction() {
-        if (currentEditingField) saveCurrentEdit();
-        const rawText = document.getElementById('rawTextInput').value;
-        if (!rawText.trim()) { showToast("⚠️ Por favor, pega el texto del promotor primero.", 'error'); return; }
-        const extractedData = extractData(rawText);
-        populateFields(extractedData);
-        showToast("✅ Extracción completada exitosamente", 'success');
-    }
-
-    function clearAll() {
-        if (currentEditingField) saveCurrentEdit();
-        document.getElementById('rawTextInput').value = '';
-        for (const id in uiElements) if (uiElements[id]) { uiElements[id].textContent = '—'; uiElements[id].classList.add('empty-field'); }
-        updateDate();
-        showToast("🧹 Todos los datos fueron limpiados", 'success');
-    }
-
-    function clearFieldsOnly() {
-        if (currentEditingField) saveCurrentEdit();
-        for (const id in uiElements) if (uiElements[id]) { uiElements[id].textContent = '—'; uiElements[id].classList.add('empty-field'); }
-        updateDate();
-        showToast("Campos de salida reiniciados", 'success');
-    }
-
-    function showToast(msg, type = 'success') {
-        const toast = document.getElementById('toastMessage');
-        toast.innerText = msg;
-        toast.className = `toast-msg ${type === 'error' ? 'copy-error' : 'copy-success'}`;
-        toast.style.opacity = '1';
-        setTimeout(() => { toast.style.opacity = '0'; }, 3000);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        buildUI();
-        document.getElementById('extractBtn').addEventListener('click', performExtraction);
-        document.getElementById('clearAllBtn').addEventListener('click', clearAll);
-        document.getElementById('copyToClipboardBtn').addEventListener('click', copyExcelFormat);
-        document.getElementById('copyTextBtn').addEventListener('click', copyTextFormat);
-        document.getElementById('clearFieldsBtn').addEventListener('click', clearFieldsOnly);
-        document.getElementById('rawTextInput').value = '';
+    // Eventos
+    datePicker.addEventListener('change', async (e) => {
+        currentDate = e.target.value;
+        activeStatusFilter = null;
+        await refreshDashboard();
+        saveSession();
     });
+    clearFilterBtn.addEventListener('click', async () => {
+        activeStatusFilter = null;
+        await refreshDashboard();
+        saveSession();
+    });
+    downloadBtn.addEventListener('click', downloadExcel);
+    loginBtn.addEventListener('click', handleLogin);
+    logoutBtn.addEventListener('click', logout);
+
+    (async function init() {
+        await loadEstrategias();
+        const restored = await restoreSession();
+        if (!restored) {
+            loginPanel.classList.remove('hidden');
+            dashboardPanel.classList.add('hidden');
+        }
+    })();
 </script>
 </body>
 </html>
